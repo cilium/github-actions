@@ -31,7 +31,7 @@ auto-label:
 block-pr-with:
   labels-unset:
   - regex-label: "release-note/.*"
-    helper: "Release note label not set, please set the appropriate release note."
+    helper: "Please set the appropriate release note label."
     set-labels:
     - "dont-merge/needs-release-note"
   labels-set:

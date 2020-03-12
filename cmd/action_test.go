@@ -78,7 +78,7 @@ func TestConfigParser(t *testing.T) {
 			LabelsUnset: []actions.PRLabelConfig{
 				{
 					RegexLabel: "release-note/.*",
-					Helper:     "Release note label not set, please set the appropriate release note.",
+					Helper:     "Please set the appropriate release note label.",
 					SetLabels: []string{
 						"dont-merge/needs-release-note",
 					},

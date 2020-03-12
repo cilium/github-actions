@@ -88,7 +88,7 @@ block-pr-with:
     - regex-label: "release-note/.*"
       # Helper message that will be set as a comment if the PR does not contain
       # the regex label
-      helper: "Release note label not set, please set the appropriate release note."
+      helper: "Please set the appropriate release note label."
       set-labels:
       # Labels that will automatically be set in case the PR does not contain
       # a label that match the regex above.
