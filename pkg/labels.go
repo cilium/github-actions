@@ -20,54 +20,31 @@ import (
 	gh "github.com/google/go-github/v30/github"
 )
 
-// ParseGHLabels parses the github labels into
-func ParseGHLabels(ghLabels []*gh.Label) []string {
-	var lbls []string
+// ParseGHLabels parses the github labels into a map of labels (a set)
+func ParseGHLabels(ghLabels []*gh.Label) map[string]struct{} {
+	lbls := make(map[string]struct{}, len(ghLabels))
 	for _, prLabel := range ghLabels {
-		lbls = append(lbls, prLabel.GetName())
+		lbls[prLabel.GetName()] = struct{}{}
 	}
 	return lbls
 }
 
-// contains returns true if 's' contains 'e'.
-func contains(s []string, e string) bool {
-	for _, a := range s {
-		if a == e {
-			return true
-		}
-	}
-	return false
-}
-
-// subslice returns true if 's1' is a subslice of 's2'.
-func subslice(s1, s2 []string) bool {
+// subslice returns true if all elements of 's1' are keys of 's2'.
+func subslice(s1 []string, s2 map[string]struct{}) bool {
 	if len(s1) > len(s2) {
 		return false
 	}
 	for _, e := range s1 {
-		if !contains(s2, e) {
+		if _, ok := s2[e]; !ok {
 			return false
 		}
 	}
 	return true
 }
 
-// GetCurrentLabels retrieve current labels of the given prNumber.
-func (c *Client) GetCurrentLabels(owner string, repoName string, prNumber int) ([]string, error) {
-	opts := gh.ListOptions{}
-	currLabels, _, err := c.gh.Issues.ListLabelsByIssue(
-		context.Background(), owner, repoName, prNumber, &opts)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return ParseGHLabels(currLabels), nil
-}
-
 // AutoLabel sets the labels automatically in a PR that is opened or reopened.
-func (c *Client) AutoLabel(labels []string, owner string, repoName string, prNumber int, currentPRLabels []string) error {
-	if subslice(labels, currentPRLabels) {
+func (c *Client) AutoLabel(labels []string, owner string, repoName string, prNumber int) error {
+	if subslice(labels, c.prLabels) {
 		return nil
 	}
 
