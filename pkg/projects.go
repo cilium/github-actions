@@ -230,7 +230,6 @@ func (c *Client) SyncPRProjects(
 	repoName string,
 	prID int64,
 	prNumber int,
-	prLbls []string,
 ) error {
 
 	var cancels []context.CancelFunc
@@ -249,7 +248,7 @@ func (c *Client) SyncPRProjects(
 		// from all other projects-columns that are not selected by the label.
 		for label, branchCfg := range branchCfgs {
 			var set bool
-			for _, currentLabel := range prLbls {
+			for currentLabel := range c.prLabels {
 				if label == currentLabel {
 					addToProj = branchCfg
 					set = true

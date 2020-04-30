@@ -45,7 +45,7 @@ type BlockPRWith struct {
 
 // BlockPRWith returns true if the PR needs to be blocked based on the logic
 // stored under config.BlockPRWith.
-func (c *Client) BlockPRWith(blockPRConfig BlockPRWith, owner, repoName string, prNumber int, prLbls []string) (bool, []string, error) {
+func (c *Client) BlockPRWith(blockPRConfig BlockPRWith, owner, repoName string, prNumber int) (bool, []string, error) {
 	var (
 		blockPR      bool
 		cancels      []context.CancelFunc
@@ -60,7 +60,7 @@ func (c *Client) BlockPRWith(blockPRConfig BlockPRWith, owner, repoName string, 
 	// Check which labels are not set in the PR.
 	for _, lblsUnset := range blockPRConfig.LabelsUnset {
 		var found bool
-		for _, prLbl := range prLbls {
+		for prLbl := range c.prLabels {
 			matched, err := regexp.MatchString(lblsUnset.RegexLabel, prLbl)
 			if err != nil {
 				return false, nil, err
@@ -80,6 +80,7 @@ func (c *Client) BlockPRWith(blockPRConfig BlockPRWith, owner, repoName string, 
 				if err != nil && !IsNotFound(err) {
 					return false, nil, err
 				}
+				delete(c.prLabels, lbl)
 			}
 		} else {
 			blockPR = true
@@ -87,7 +88,7 @@ func (c *Client) BlockPRWith(blockPRConfig BlockPRWith, owner, repoName string, 
 			// users avoiding PR from being merged.
 			// Don't re-print helper messages if we already have setup the
 			// labels in the past.
-			if lblsUnset.Helper != "" && !subslice(lblsUnset.SetLabels, prLbls) {
+			if lblsUnset.Helper != "" && !subslice(lblsUnset.SetLabels, c.prLabels) {
 				ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 				cancels = append(cancels, cancel)
 				_, _, err := c.gh.Issues.CreateComment(ctx, owner, repoName, prNumber, &gh.IssueComment{
@@ -104,20 +105,17 @@ func (c *Client) BlockPRWith(blockPRConfig BlockPRWith, owner, repoName string, 
 				if err != nil {
 					return false, nil, err
 				}
+				for _, lbl := range lblsUnset.SetLabels {
+					c.prLabels[lbl] = struct{}{}
+				}
 			}
 		}
 	}
 
-	// Re-fetch the PR labels since we previously had re-add and delete some
-	// labels.
-	prLbls, err := c.GetCurrentLabels(owner, repoName, prNumber)
-	if err != nil {
-		return false, nil, err
-	}
 	// Set the PR to be blocked if any of the labels provided by the regex is
 	// currently set in the PR
 	for _, lblsSet := range blockPRConfig.LabelsSet {
-		for _, prLbl := range prLbls {
+		for prLbl := range c.prLabels {
 			matched, err := regexp.MatchString(lblsSet.RegexLabel, prLbl)
 			if err != nil {
 				return false, nil, err
@@ -202,6 +200,7 @@ func (c *Client) UpdateMergeabilityCheck(
 						})
 						c.log.Info().Fields(map[string]interface{}{
 							"pr-number": prNumber,
+							"blockPR":   blockPR,
 						}).Err(err).Msg("Updating Mergeability for PR")
 						return err
 					}

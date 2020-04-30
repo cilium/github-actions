@@ -31,8 +31,9 @@ type PRBlockerConfig struct {
 }
 
 type Client struct {
-	gh  *gh.Client
-	log *zerolog.Logger
+	gh       *gh.Client
+	log      *zerolog.Logger
+	prLabels map[string]struct{}
 }
 
 func NewClient(ghClient *gh.Client, logger *zerolog.Logger) *Client {
@@ -53,11 +54,12 @@ func (c *Client) HandlePRE(cfg PRBlockerConfig, pre *gh.PullRequestEvent) error 
 		"pr-number": prNumber,
 	}).Msg("Action triggered from PR")
 
+	c.prLabels = ParseGHLabels(pr.Labels)
+
 	// Autolabel PRs as soon they are created
 	if len(cfg.AutoLabel) != 0 { // We only auto-label PRs if when they are open / reopen
 		if action == "opened" || action == "reopened" {
-			prLbls := ParseGHLabels(pr.Labels)
-			err := c.AutoLabel(cfg.AutoLabel, owner, repoName, prNumber, prLbls)
+			err := c.AutoLabel(cfg.AutoLabel, owner, repoName, prNumber)
 			if err != nil {
 				return err
 			}
@@ -82,8 +84,7 @@ func (c *Client) HandlePRE(cfg PRBlockerConfig, pre *gh.PullRequestEvent) error 
 		if pr.GetState() != "closed" {
 			switch action {
 			case "labeled", "unlabeled", "synchronize", "opened", "reopened":
-				prLbls := ParseGHLabels(pr.Labels)
-				blockPR, blockReasons, err := c.BlockPRWith(cfg.BlockPRWith, owner, repoName, prNumber, prLbls)
+				blockPR, blockReasons, err := c.BlockPRWith(cfg.BlockPRWith, owner, repoName, prNumber)
 				if err != nil {
 					return err
 				}
@@ -115,8 +116,7 @@ func (c *Client) HandlePRE(cfg PRBlockerConfig, pre *gh.PullRequestEvent) error 
 	if len(cfg.MoveToProjectsForLabelsXORed) != 0 {
 		switch action {
 		case "labeled", "unlabeled":
-			prLbls := ParseGHLabels(pr.Labels)
-			err := c.SyncPRProjects(cfg.MoveToProjectsForLabelsXORed, owner, repoName, pr.GetID(), prNumber, prLbls)
+			err := c.SyncPRProjects(cfg.MoveToProjectsForLabelsXORed, owner, repoName, pr.GetID(), prNumber)
 			if err != nil {
 				return err
 			}
