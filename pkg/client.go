@@ -15,6 +15,7 @@
 package actions
 
 import (
+	"errors"
 	"net/http"
 
 	gh "github.com/google/go-github/v30/github"
@@ -100,7 +101,12 @@ func (c *Client) HandlePRE(cfg PRBlockerConfig, pre *gh.PullRequestEvent) error 
 		if action == "opened" {
 			err := c.PutPRInProject(owner, repoName, pr.GetID(), cfg.Project)
 			if err != nil {
-				return err
+				// Ignore the error if the project was not found. It might mean
+				// the project was closed so we don't need to track this PR on
+				// it.
+				if !errors.Is(err, &ErrProjectNotFound{projectName: cfg.Project.ProjectName}) {
+					return err
+				}
 			}
 		}
 	}

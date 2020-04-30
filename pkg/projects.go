@@ -16,6 +16,7 @@ package actions
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -24,6 +25,22 @@ import (
 
 	gh "github.com/google/go-github/v30/github"
 )
+
+type ErrProjectNotFound struct {
+	projectName string
+}
+
+func (e ErrProjectNotFound) Error() string {
+	return fmt.Sprintf("project %q not found", e.projectName)
+}
+
+func (e *ErrProjectNotFound) Is(target error) bool {
+	t, ok := target.(*ErrProjectNotFound)
+	if !ok {
+		return false
+	}
+	return e.projectName == t.projectName
+}
 
 type Project struct {
 	ProjectName string `yaml:"project,omitempty"`
@@ -72,7 +89,7 @@ func (c *Client) GetColumnID(owner, repoName string, project Project) (int64, in
 		return 0, 0, err
 	}
 	if projectID == 0 {
-		return 0, 0, fmt.Errorf("project %q not found", project.ProjectName)
+		return 0, 0, &ErrProjectNotFound{projectName: project.ProjectName}
 	}
 
 	var cancels []context.CancelFunc
@@ -258,6 +275,12 @@ func (c *Client) SyncPRProjects(
 				var err error
 				cardColumnID, cardID, err = c.FindPRInProject(owner, repoName, prNumber, delFromProj)
 				if err != nil {
+					// Ignore the error if the project was not found. It might mean
+					// the project was closed so we don't need to track this PR on
+					// it.
+					if errors.Is(err, &ErrProjectNotFound{projectName: delFromProj.ProjectName}) {
+						continue
+					}
 					return err
 				}
 				if cardID != 0 {
@@ -268,6 +291,12 @@ func (c *Client) SyncPRProjects(
 			// set in the PR.
 			columnID, err := c.GetOrCreateColumnID(owner, repoName, addToProj)
 			if err != nil {
+				// Ignore the error if the project was not found. It might mean
+				// the project was closed so we don't need to track this PR on
+				// it.
+				if errors.Is(err, &ErrProjectNotFound{projectName: addToProj.ProjectName}) {
+					continue
+				}
 				return err
 			}
 			if cardID != 0 {
@@ -301,6 +330,12 @@ func (c *Client) SyncPRProjects(
 			for _, delFromProj := range delFromProjs {
 				_, cardID, err := c.FindPRInProject(owner, repoName, prNumber, delFromProj)
 				if err != nil {
+					// Ignore the error if the project was not found. It might mean
+					// the project was closed so we don't need to track this PR on
+					// it.
+					if errors.Is(err, &ErrProjectNotFound{projectName: delFromProj.ProjectName}) {
+						continue
+					}
 					return err
 				}
 				if cardID == 0 {
