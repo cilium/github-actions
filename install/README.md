@@ -30,7 +30,7 @@ gcloud iam service-accounts keys create ./secrets/account.json \
 5. `terraform apply`
 6. `terraform output | grep ipv4 | cut -d = -f2 | xargs echo`
 7. Copy the IP from step 6 and paste it under `User authorization callback URL`
-   and `Webhook URL` and click `Save changes`
+   and `Webhook URL` (from the URL of step 1.) and click `Save changes`.
 8. Access the VM and check logs. Trigger an event from any open PR by changing
    the labels.
 ```bash
@@ -44,3 +44,6 @@ Inside the VM
 ```bash
 docker logs -f `docker ps -aq`
 ```
+9. Open https://github.com/organizations/cilium/settings/apps/maintainer-s-little-helper/advanced
+   and check if there were deliveries that failed while the upgrade was being
+   performed. Re-deliever them.
