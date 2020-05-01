@@ -94,10 +94,31 @@ type PRCommentHandler struct {
 }
 
 func (h *PRCommentHandler) Handles() []string {
-	return []string{"pull_request"}
+	return []string{"pull_request", "pull_request_review", "status"}
 }
 
 func (h *PRCommentHandler) Handle(ctx context.Context, eventType, deliveryID string, payload []byte) error {
+	// pull_request -> PullRequestEvent
+	// pull_request_review -> PullRequestReviewEvent
+	// status -> StatusEvent
+	var err error
+	switch eventType {
+	case "status":
+		err = h.HandleSE(ctx, payload)
+	case "pull_request_review":
+		err = h.HandlePRRE(ctx, payload)
+	case "pull_request":
+		err = h.HandlePRE(ctx, payload)
+	}
+	if err != nil {
+		logger.Err(err).Msg("Unable to handle event")
+		return fmt.Errorf("unable to handle PullRequestEvent: %s\n", err)
+	}
+
+	return nil
+}
+
+func (h *PRCommentHandler) HandlePRE(ctx context.Context, payload []byte) error {
 	var event gh.PullRequestEvent
 	if err := json.Unmarshal(payload, &event); err != nil {
 		return errors.Wrap(err, "failed to parse issue comment event payload")
@@ -122,11 +143,64 @@ func (h *PRCommentHandler) Handle(ctx context.Context, eventType, deliveryID str
 		return fmt.Errorf("unable to unmarshal config %q file: %s\n", actionCfgPath, err)
 	}
 	l := actions.NewClient(ghClient, zerolog.Ctx(ctx))
-	err = l.HandlePRE(c, &event)
-	if err != nil {
-		logger.Err(err).Msg("Unable to handle event")
-		return fmt.Errorf("unable to handle PullRequestEvent: %s\n", err)
-	}
+	return l.HandlePRE(c, &event)
+}
 
-	return nil
+func (h *PRCommentHandler) HandleSE(ctx context.Context, payload []byte) error{
+	var event gh.StatusEvent
+	if err := json.Unmarshal(payload, &event); err != nil {
+		return errors.Wrap(err, "failed to parse issue comment event payload")
+	}
+	installationID := event.GetInstallation().GetID()
+
+	ghClient, err := h.NewInstallationClient(installationID)
+	if err != nil {
+		return err
+	}
+	actionCfgPath := os.Getenv("CONFIG_PATH")
+	owner := event.Repo.GetOwner().GetLogin()
+	repoName := event.Repo.GetName()
+	ghSha := event.GetSHA()
+	cfgFile, err := github.GetConfigFile(ghClient, owner, repoName, actionCfgPath, ghSha)
+	if err != nil {
+		return fmt.Errorf("unable to get config %q file: %s\n", actionCfgPath, err)
+	}
+	var c actions.PRBlockerConfig
+	err = yaml.Unmarshal(cfgFile, &c)
+	if err != nil {
+		return fmt.Errorf("unable to unmarshal config %q file: %s\n", actionCfgPath, err)
+	}
+	l := actions.NewClient(ghClient, zerolog.Ctx(ctx))
+
+	return l.HandleSE(c, &event)
+
+}
+
+func (h *PRCommentHandler) HandlePRRE(ctx context.Context, payload []byte) error {
+	var event gh.PullRequestReviewEvent
+	if err := json.Unmarshal(payload, &event); err != nil {
+		return errors.Wrap(err, "failed to parse issue comment event payload")
+	}
+	installationID := event.GetInstallation().GetID()
+
+	ghClient, err := h.NewInstallationClient(installationID)
+	if err != nil {
+		return err
+	}
+	actionCfgPath := os.Getenv("CONFIG_PATH")
+	owner := event.PullRequest.Base.Repo.GetOwner().GetLogin()
+	repoName := event.PullRequest.Base.Repo.GetName()
+	ghSha := event.PullRequest.Base.GetSHA()
+	cfgFile, err := github.GetConfigFile(ghClient, owner, repoName, actionCfgPath, ghSha)
+	if err != nil {
+		return fmt.Errorf("unable to get config %q file: %s\n", actionCfgPath, err)
+	}
+	var c actions.PRBlockerConfig
+	err = yaml.Unmarshal(cfgFile, &c)
+	if err != nil {
+		return fmt.Errorf("unable to unmarshal config %q file: %s\n", actionCfgPath, err)
+	}
+	l := actions.NewClient(ghClient, zerolog.Ctx(ctx))
+
+	return l.HandlePRRE(c, &event)
 }
