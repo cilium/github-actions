@@ -15,8 +15,10 @@
 package actions
 
 import (
+	"context"
 	"errors"
 	"net/http"
+	"time"
 
 	gh "github.com/google/go-github/v30/github"
 	"github.com/rs/zerolog"
@@ -28,6 +30,7 @@ type PRBlockerConfig struct {
 	RequireMsgsInCommit          []MsgInCommit                 `yaml:"require-msgs-in-commit,omitempty"`
 	AutoLabel                    []string                      `yaml:"auto-label,omitempty"`
 	BlockPRWith                  BlockPRWith                   `yaml:"block-pr-with,omitempty"`
+	AutoMerge                    AutoMerge                     `yaml:"auto-merge,omitempty"`
 }
 
 type Client struct {
@@ -123,6 +126,94 @@ func (c *Client) HandlePRE(cfg PRBlockerConfig, pre *gh.PullRequestEvent) error 
 		}
 	}
 
+	// if len(cfg.AutoMerge.Label) != 0 {
+	if true {
+		switch action {
+		case "labeled", "unlabeled", "synchronize":
+			cfg.AutoMerge.Label = "ready-to-merge"
+			if !pr.GetDraft() {
+				err := c.AutoMerge(cfg.AutoMerge, owner, repoName, pr.GetBase(), pr.GetHead(), prNumber, nil)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+func (c *Client) HandlePRRE(cfg PRBlockerConfig, pre *gh.PullRequestReviewEvent) error {
+	pr := pre.GetPullRequest()
+	owner := pr.Base.Repo.GetOwner().GetLogin()
+	repoName := *pr.Base.Repo.Name
+	prNumber := pr.GetNumber()
+	action := pre.GetAction()
+	c.log.Info().Fields(map[string]interface{}{
+		"action":    action,
+		"pr-number": prNumber,
+	}).Msg("Action triggered from PR")
+
+	c.prLabels = ParseGHLabels(pr.Labels)
+
+	// if len(cfg.AutoMerge.Label) != 0 {
+	if true {
+		cfg.AutoMerge.Label = "ready-to-merge"
+		if !pr.GetDraft() {
+			err := c.AutoMerge(cfg.AutoMerge, owner, repoName, pr.GetBase(), pr.GetHead(), prNumber, pre.Review)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (c *Client) HandleSE(cfg PRBlockerConfig, se *gh.StatusEvent) error {
+	owner := se.Repo.GetOwner().GetLogin()
+	repoName := *se.Repo.Name
+	nextPage := 0
+
+	if true {
+		cfg.AutoMerge.Label = "ready-to-merge"
+	}
+
+	var (
+		cancels []context.CancelFunc
+	)
+	defer func() {
+		for _, cancel := range cancels {
+			cancel()
+		}
+	}()
+
+	for {
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		cancels = append(cancels, cancel)
+		prs, resp, err := c.gh.PullRequests.ListPullRequestsWithCommit(ctx, owner, repoName, se.GetSHA(), &gh.PullRequestListOptions{
+			Head: se.GetSHA(),
+			ListOptions: gh.ListOptions{
+				Page: nextPage,
+			},
+		})
+		if err != nil {
+			return err
+		}
+		for _, pr := range prs {
+			if !pr.GetDraft() {
+				err := c.AutoMerge(cfg.AutoMerge, owner, repoName, pr.GetBase(), pr.GetHead(), pr.GetNumber(), nil)
+				if err != nil {
+					return err
+				}
+			}
+		}
+
+		nextPage = resp.NextPage
+		if nextPage != 0 {
+			continue
+		}
+		break
+	}
 	return nil
 }
 
