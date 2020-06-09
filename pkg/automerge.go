@@ -72,6 +72,9 @@ func (c *Client) AutoMerge(
 
 	// If the CI have passed, check all reviews
 	userReviews, err := c.getReviews(owner, repoName, prNumber)
+	if err != nil {
+		return err
+	}
 
 	var requestedReviews []string
 	userChangesRequested := map[string]struct{}{}
@@ -264,11 +267,22 @@ func (c *Client) getReviews(owner string, repoName string, prNumber int) (map[st
 		for _, review := range reviews {
 			userName := review.GetUser().GetLogin()
 			userReview, ok := recentReviewsByUser[userName]
-			if !ok ||
-				review.GetSubmittedAt().After(userReview.GetSubmittedAt()) {
-
+			if !ok {
 				recentReviewsByUser[userName] = review
 				continue
+			}
+			// We have the most up to date review from a user in in the
+			// following conditions:
+			//  CHANGES_REQUESTED overwrites any previous review
+			//  APPROVE overwrites any previous review
+			//  COMMENTED is only kept if no other APPROVE nor CHANGES_REQUESTED
+			//  have been made
+			if review.GetSubmittedAt().After(userReview.GetSubmittedAt()) {
+				switch strings.ToLower(review.GetState()) {
+				case "changes_requested", "approved":
+					recentReviewsByUser[userName] = review
+					continue
+				}
 			}
 		}
 
