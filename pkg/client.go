@@ -41,8 +41,9 @@ type Client struct {
 
 func NewClient(ghClient *gh.Client, logger *zerolog.Logger) *Client {
 	return &Client{
-		gh:  ghClient,
-		log: logger,
+		gh:       ghClient,
+		log:      logger,
+		prLabels: map[string]struct{}{},
 	}
 }
 
@@ -145,6 +146,9 @@ func (c *Client) HandlePRE(cfg PRBlockerConfig, pre *gh.PullRequestEvent) error 
 		case "labeled", "unlabeled", "synchronize":
 			cfg.AutoMerge.Label = "ready-to-merge"
 			cfg.AutoMerge.MinimalApprovals = 1
+			if pre.GetLabel().GetName() == cfg.AutoMerge.Label {
+				return nil
+			}
 			if !pr.GetDraft() {
 				err := c.AutoMerge(cfg.AutoMerge, owner, repoName, pr.GetBase(), pr.GetHead(), prNumber, nil)
 				if err != nil {

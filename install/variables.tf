@@ -38,5 +38,5 @@ variable "service_account_name" {
 variable "container_image" {
   description = "The image name to deploy"
   type        = string
-  default     = "docker.io/cilium/github-actions:aanm-test-v18"
+  default     = "docker.io/cilium/github-actions:aanm-test-v22"
 }

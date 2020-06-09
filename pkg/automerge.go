@@ -17,6 +17,7 @@ package actions
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	gh "github.com/google/go-github/v30/github"
@@ -35,10 +36,6 @@ func (c *Client) AutoMerge(
 	prNumber int,
 	review *gh.PullRequestReview,
 ) error {
-
-	if _, ok := c.prLabels[cfg.Label]; ok {
-		return nil
-	}
 
 	ciChecks, err := c.getCIStatus(owner, repoName, base, head, prNumber)
 	if err != nil {
@@ -83,7 +80,7 @@ func (c *Client) AutoMerge(
 		// (stale review is a review that was done before the PR was resynced
 		// by the author)
 
-		if userReview.GetState() == "CHANGES_REQUESTED" {
+		if strings.EqualFold(userReview.GetState(), "changes_requested") {
 			if userReview.SubmittedAt.Before(commitDate) {
 				requestedReviews = append(
 					requestedReviews,
@@ -123,12 +120,13 @@ func (c *Client) AutoMerge(
 		// from this user so we need to update it with the information that
 		// we already have because GH might keep a cache of the previous review
 		// done by that user.
-		switch review.GetState() {
-		case "CHANGES_REQUESTED":
+		switch strings.ToLower(review.GetState()) {
+		case "changes_requested":
 			userChangesRequested[review.GetUser().GetLogin()] = struct{}{}
-		case "APPROVE":
+		case "approve", "approved":
 			approvals++
 			delete(users, review.GetUser().GetLogin())
+			delete(userChangesRequested, review.GetUser().GetLogin())
 		}
 
 	}
@@ -141,6 +139,17 @@ func (c *Client) AutoMerge(
 			"min-approvals":           cfg.MinimalApprovals,
 			"total-approvals":         approvals,
 		}).Msg("Users have requested changes, the author hasn't synced the PR or the PR does not have the minimal approvals")
+		// Only review the label if we know that exists or that we are handling
+		// a PR review event (review != nil).
+		if _, ok := c.prLabels[cfg.Label]; ok || review != nil {
+			c.log.Info().Msg("Removing ready-to-merge label")
+			_, err := c.gh.Issues.RemoveLabelForIssue(
+				context.Background(), owner, repoName, prNumber, cfg.Label)
+			if err != nil && !IsNotFound(err) {
+				return err
+			}
+			delete(c.prLabels, cfg.Label)
+		}
 		return nil
 	}
 
@@ -161,6 +170,7 @@ func (c *Client) AutoMerge(
 	if err != nil {
 		return err
 	}
+	c.prLabels[cfg.Label] = struct{}{}
 
 	return nil
 }
