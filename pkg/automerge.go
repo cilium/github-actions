@@ -24,7 +24,7 @@ import (
 
 type AutoMerge struct {
 	Label            string `yaml:"label"`
-	MinimalApprovals string `yaml:"min-approvals"`
+	MinimalApprovals int    `yaml:"min-approvals"`
 }
 
 func (c *Client) AutoMerge(
@@ -117,6 +117,7 @@ func (c *Client) AutoMerge(
 	for user := range users {
 		delete(userChangesRequested, user)
 	}
+	var approvals int
 	if review != nil {
 		// We have received a review event. We have the most updated review
 		// from this user so we need to update it with the information that
@@ -126,17 +127,20 @@ func (c *Client) AutoMerge(
 		case "CHANGES_REQUESTED":
 			userChangesRequested[review.GetUser().GetLogin()] = struct{}{}
 		case "APPROVE":
+			approvals++
 			delete(users, review.GetUser().GetLogin())
 		}
 
 	}
 
-	if len(users) != 0 || len(teams) != 0 || len(userChangesRequested) != 0 {
+	if cfg.MinimalApprovals < approvals || len(users) != 0 || len(teams) != 0 || len(userChangesRequested) != 0 {
 		c.log.Info().Fields(map[string]interface{}{
 			"teams":                   teams,
 			"users":                   users,
 			"users-requested-changes": userChangesRequested,
-		}).Msg("Users have requested changes or the author hasn't synced the PR")
+			"min-approvals":           cfg.MinimalApprovals,
+			"total-approvals":         approvals,
+		}).Msg("Users have requested changes, the author hasn't synced the PR or the PR does not have the minimal approvals")
 		return nil
 	}
 

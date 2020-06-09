@@ -144,6 +144,7 @@ func (c *Client) HandlePRE(cfg PRBlockerConfig, pre *gh.PullRequestEvent) error 
 		switch action {
 		case "labeled", "unlabeled", "synchronize":
 			cfg.AutoMerge.Label = "ready-to-merge"
+			cfg.AutoMerge.MinimalApprovals = 1
 			if !pr.GetDraft() {
 				err := c.AutoMerge(cfg.AutoMerge, owner, repoName, pr.GetBase(), pr.GetHead(), prNumber, nil)
 				if err != nil {
@@ -172,6 +173,7 @@ func (c *Client) HandlePRRE(cfg PRBlockerConfig, pre *gh.PullRequestReviewEvent)
 	// if len(cfg.AutoMerge.Label) != 0 {
 	if true {
 		cfg.AutoMerge.Label = "ready-to-merge"
+		cfg.AutoMerge.MinimalApprovals = 1
 		if !pr.GetDraft() {
 			err := c.AutoMerge(cfg.AutoMerge, owner, repoName, pr.GetBase(), pr.GetHead(), prNumber, pre.Review)
 			if err != nil {
@@ -189,6 +191,7 @@ func (c *Client) HandleSE(cfg PRBlockerConfig, se *gh.StatusEvent) error {
 
 	if true {
 		cfg.AutoMerge.Label = "ready-to-merge"
+		cfg.AutoMerge.MinimalApprovals = 1
 	}
 
 	var (
