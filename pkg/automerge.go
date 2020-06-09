@@ -36,9 +36,9 @@ func (c *Client) AutoMerge(
 	review *gh.PullRequestReview,
 ) error {
 
-	// if _, ok := c.prLabels[cfg.Label]; !ok {
-	// 	return nil
-	// }
+	if _, ok := c.prLabels[cfg.Label]; ok {
+		return nil
+	}
 
 	ciChecks, err := c.getCIStatus(owner, repoName, base, head, prNumber)
 	if err != nil {

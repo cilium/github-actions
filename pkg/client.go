@@ -129,6 +129,19 @@ func (c *Client) HandlePRE(cfg PRBlockerConfig, pre *gh.PullRequestEvent) error 
 	// if len(cfg.AutoMerge.Label) != 0 {
 	if true {
 		switch action {
+		case "synchronize":
+			// Remove ready-to-merge label if it is present and the developer
+			// synchronized the PR
+			if _, ok := c.prLabels[cfg.AutoMerge.Label]; ok {
+				_, err := c.gh.Issues.RemoveLabelForIssue(
+					context.Background(), owner, repoName, prNumber, cfg.AutoMerge.Label)
+				if err != nil {
+					return err
+				}
+				delete(c.prLabels, cfg.AutoMerge.Label)
+			}
+		}
+		switch action {
 		case "labeled", "unlabeled", "synchronize":
 			cfg.AutoMerge.Label = "ready-to-merge"
 			if !pr.GetDraft() {
