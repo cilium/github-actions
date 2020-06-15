@@ -176,6 +176,13 @@ func (c *Client) AutoMerge(
 	if err != nil {
 		return err
 	}
+	c.log.Info().Fields(map[string]interface{}{
+		"teams":                   teams,
+		"users":                   users,
+		"users-requested-changes": userChangesRequested,
+		"min-approvals":           cfg.MinimalApprovals,
+		"total-approvals":         approvals,
+	}).Msg("Set 'ready-to-merge'")
 	c.prLabels[cfg.Label] = struct{}{}
 
 	return nil
