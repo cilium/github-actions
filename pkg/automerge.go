@@ -137,7 +137,7 @@ func (c *Client) AutoMerge(
 		}
 	}
 
-	if cfg.MinimalApprovals < approvals || len(users) != 0 || len(teams) != 0 || len(userChangesRequested) != 0 {
+	if approvals < cfg.MinimalApprovals || len(users) != 0 || len(teams) != 0 || len(userChangesRequested) != 0 {
 		c.log.Info().Fields(map[string]interface{}{
 			"teams":                   teams,
 			"users":                   users,
