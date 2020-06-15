@@ -60,7 +60,7 @@ module "gce-advanced-container" {
 resource "google_compute_instance" "vm" {
   project      = var.project_id
   name         = local.instance_name
-  machine_type = "n1-standard-1"
+  machine_type = "g1-small"
   zone         = var.zone
 
   boot_disk {
