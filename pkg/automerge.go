@@ -72,6 +72,13 @@ func (c *Client) AutoMerge(
 	if err != nil {
 		return err
 	}
+	if review != nil {
+		// We have received a review event. We have the most updated review
+		// from this user so we need to update it with the information that
+		// we already have because GH might keep a cache of the previous review
+		// done by that user.
+		userReviews[review.GetUser().GetLogin()] = review
+	}
 
 	var requestedReviews []string
 	userChangesRequested := map[string]struct{}{}
@@ -128,7 +135,6 @@ func (c *Client) AutoMerge(
 			delete(users, review.GetUser().GetLogin())
 			delete(userChangesRequested, review.GetUser().GetLogin())
 		}
-
 	}
 
 	if cfg.MinimalApprovals < approvals || len(users) != 0 || len(teams) != 0 || len(userChangesRequested) != 0 {
