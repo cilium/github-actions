@@ -80,14 +80,18 @@ func (c *Client) AutoMerge(
 		userReviews[review.GetUser().GetLogin()] = review
 	}
 
-	var requestedReviews []string
-	userChangesRequested := map[string]struct{}{}
+	var (
+		requestedReviews     []string
+		approvals            int
+		userChangesRequested = map[string]struct{}{}
+	)
 	for _, userReview := range userReviews {
 		// request reviews for users that have stale reviews
 		// (stale review is a review that was done before the PR was resynced
 		// by the author)
 
-		if strings.EqualFold(userReview.GetState(), "changes_requested") {
+		switch strings.ToLower(userReview.GetState()) {
+		case "changes_requested":
 			if userReview.SubmittedAt.Before(commitDate) {
 				requestedReviews = append(
 					requestedReviews,
@@ -96,11 +100,14 @@ func (c *Client) AutoMerge(
 			} else {
 				userChangesRequested[userReview.GetUser().GetLogin()] = struct{}{}
 			}
+		case "approve", "approved":
+			approvals++
 		}
 	}
 	if len(requestedReviews) != 0 {
 		c.log.Info().Fields(map[string]interface{}{
 			"users-requested-changes": requestedReviews,
+			"pr-number":               prNumber,
 		}).Msg("Requesting reviews for users")
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
@@ -121,7 +128,6 @@ func (c *Client) AutoMerge(
 	for user := range users {
 		delete(userChangesRequested, user)
 	}
-	var approvals int
 	if review != nil {
 		// We have received a review event. We have the most updated review
 		// from this user so we need to update it with the information that
@@ -131,7 +137,6 @@ func (c *Client) AutoMerge(
 		case "changes_requested":
 			userChangesRequested[review.GetUser().GetLogin()] = struct{}{}
 		case "approve", "approved":
-			approvals++
 			delete(users, review.GetUser().GetLogin())
 			delete(userChangesRequested, review.GetUser().GetLogin())
 		}
@@ -144,6 +149,7 @@ func (c *Client) AutoMerge(
 			"users-requested-changes": userChangesRequested,
 			"min-approvals":           cfg.MinimalApprovals,
 			"total-approvals":         approvals,
+			"pr-number":               prNumber,
 		}).Msg("Users have requested changes, the author hasn't synced the PR or the PR does not have the minimal approvals")
 		// Only review the label if we know that exists or that we are handling
 		// a PR review event (review != nil).
@@ -182,6 +188,7 @@ func (c *Client) AutoMerge(
 		"users-requested-changes": userChangesRequested,
 		"min-approvals":           cfg.MinimalApprovals,
 		"total-approvals":         approvals,
+		"pr-number":               prNumber,
 	}).Msg("Set 'ready-to-merge'")
 	c.prLabels[cfg.Label] = struct{}{}
 
