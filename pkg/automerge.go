@@ -77,7 +77,7 @@ func (c *Client) AutoMerge(
 		// from this user so we need to update it with the information that
 		// we already have because GH might keep a cache of the previous review
 		// done by that user.
-		userReviews[review.GetUser().GetLogin()] = review
+		addReview(userReviews, review)
 	}
 
 	var (
@@ -278,6 +278,27 @@ func (c *Client) getCIStatus(
 	return ciChecks, nil
 }
 
+func addReview(recentReviewsByUser map[string]*gh.PullRequestReview, review *gh.PullRequestReview) {
+	userName := review.GetUser().GetLogin()
+	userReview, ok := recentReviewsByUser[userName]
+	if !ok {
+		recentReviewsByUser[userName] = review
+		return
+	}
+	// We have the most up to date review from a user in in the
+	// following conditions:
+	//  CHANGES_REQUESTED overwrites any previous review
+	//  APPROVE overwrites any previous review
+	//  COMMENTED is only kept if no other APPROVE nor CHANGES_REQUESTED
+	//  have been made
+	if review.GetSubmittedAt().After(userReview.GetSubmittedAt()) {
+		switch strings.ToLower(review.GetState()) {
+		case "changes_requested", "approved":
+			recentReviewsByUser[userName] = review
+		}
+	}
+}
+
 func (c *Client) getReviews(owner string, repoName string, prNumber int) (map[string]*gh.PullRequestReview, error) {
 	var cancels []context.CancelFunc
 	defer func() {
@@ -299,25 +320,7 @@ func (c *Client) getReviews(owner string, repoName string, prNumber int) (map[st
 			return nil, err
 		}
 		for _, review := range reviews {
-			userName := review.GetUser().GetLogin()
-			userReview, ok := recentReviewsByUser[userName]
-			if !ok {
-				recentReviewsByUser[userName] = review
-				continue
-			}
-			// We have the most up to date review from a user in in the
-			// following conditions:
-			//  CHANGES_REQUESTED overwrites any previous review
-			//  APPROVE overwrites any previous review
-			//  COMMENTED is only kept if no other APPROVE nor CHANGES_REQUESTED
-			//  have been made
-			if review.GetSubmittedAt().After(userReview.GetSubmittedAt()) {
-				switch strings.ToLower(review.GetState()) {
-				case "changes_requested", "approved":
-					recentReviewsByUser[userName] = review
-					continue
-				}
-			}
+			addReview(recentReviewsByUser, review)
 		}
 
 		nextPage = resp.NextPage
