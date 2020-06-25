@@ -4,7 +4,7 @@ endif
 
 all:
 	docker build -t cilium/github-actions:${VERSION} .
-	@echo "\nTo push to the registry:\ndocker push cilium/github-actions:${VERSION}"
+	@echo -e "\nTo push to the registry:\ndocker push cilium/github-actions:${VERSION}"
 
 .PHONY: all github-actions local
 
