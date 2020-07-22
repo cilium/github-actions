@@ -5,39 +5,7 @@ in `github.com/cilium/cilium`
 
 ## Configuration
 
-Apply the following file in `.github/workflows`:
-
-```yaml
-name: maintainers-little-helper-master
-
-on:
-  pull_request:
-    types:
-      - labeled
-      - unlabeled
-      - opened
-      - edited
-      - closed
-      - reopened
-      - synchronize
-      - ready_for_review
-      - locked
-      - unlocked
-    branches:
-      - master
-
-jobs:
-  cilium-github-actions:
-    runs-on: ubuntu-latest
-    steps:
-      - name: cilium-actions
-        uses: docker://docker.io/cilium/github-actions:v0.1.0
-        env:
-          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-          CONFIG_PATH: .github/cilium-actions-master.yml
-```
-
-And have the configuration in `.github/cilium-actions-master.yml`.
+Configuration needs to located at `.github/cilium-actions.yml`.
 
 All the supported options are:
 
