@@ -20,7 +20,7 @@ import (
 	"net/http"
 	"time"
 
-	gh "github.com/google/go-github/v30/github"
+	gh "github.com/google/go-github/v32/github"
 	"github.com/rs/zerolog"
 )
 
