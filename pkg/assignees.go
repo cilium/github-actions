@@ -17,7 +17,7 @@ package actions
 import (
 	"context"
 
-	gh "github.com/google/go-github/v30/github"
+	gh "github.com/google/go-github/v32/github"
 )
 
 func (c *Client) Assign(ctx context.Context, owner string, name string, number int, reviewers []*gh.User) (err error) {
