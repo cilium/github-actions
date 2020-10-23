@@ -1,4 +1,4 @@
-// Copyright 2019 Authors of Cilium
+// Copyright 2019-2020 Authors of Cilium
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -57,6 +57,19 @@ func (c *Client) HandlePRE(cfg PRBlockerConfig, pre *gh.PullRequestEvent) error 
 		"action":    action,
 		"pr-number": prNumber,
 	}).Msg("Action triggered from PR")
+
+	// Assign individual reviewers to list of assignees
+	if action == "review_requested" {
+		users := pre.PullRequest.RequestedReviewers
+		err := c.Assign(context.TODO(), owner, repoName, prNumber, users)
+		if err != nil {
+			c.log.Info().Fields(map[string]interface{}{
+				"error":     err,
+				"pr-number": prNumber,
+			}).Msg("Unable to add assignees to PR")
+			return err
+		}
+	}
 
 	c.prLabels = ParseGHLabels(pr.Labels)
 
