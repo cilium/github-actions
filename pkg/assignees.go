@@ -20,14 +20,16 @@ import (
 	gh "github.com/google/go-github/v32/github"
 )
 
-func (c *Client) Assign(ctx context.Context, owner string, name string, number int, reviewers []*gh.User) (err error) {
+type assignHandler func(ctx context.Context, owner, repo string, number int, assignees []string) (*gh.Issue, *gh.Response, error)
+
+func (c *Client) manageAssignees(ctx context.Context, owner string, name string, number int, reviewers []*gh.User, handler assignHandler, msg string) (err error) {
 	assignees := make([]string, 0, len(reviewers))
 	defer func() {
 		c.log.Info().Fields(map[string]interface{}{
 			"error":     err,
 			"assignees": assignees,
 			"pr-number": number,
-		}).Msg("Added assignees to PR")
+		}).Msg(msg)
 	}()
 	for _, user := range reviewers {
 		assignees = append(assignees, user.GetLogin())
@@ -35,7 +37,7 @@ func (c *Client) Assign(ctx context.Context, owner string, name string, number i
 	if len(assignees) == 0 {
 		return nil
 	}
-	_, _, err = c.gh.Issues.AddAssignees(
+	_, _, err = handler(
 		ctx,
 		owner,
 		name,
@@ -47,4 +49,14 @@ func (c *Client) Assign(ctx context.Context, owner string, name string, number i
 	}
 
 	return nil
+}
+
+func (c *Client) Assign(ctx context.Context, owner string, name string, number int, users []*gh.User) (err error) {
+	return c.manageAssignees(ctx, owner, name, number, users,
+		c.gh.Issues.AddAssignees, "Added assignees to PR")
+}
+
+func (c *Client) Unassign(ctx context.Context, owner string, name string, number int, users []*gh.User) (err error) {
+	return c.manageAssignees(ctx, owner, name, number, users,
+		c.gh.Issues.RemoveAssignees, "Remove assignees from PR")
 }

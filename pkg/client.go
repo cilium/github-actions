@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"strings"
 	"time"
 
 	gh "github.com/google/go-github/v32/github"
@@ -186,6 +187,23 @@ func (c *Client) HandlePRRE(cfg PRBlockerConfig, pre *gh.PullRequestReviewEvent)
 	}).Msg("Action triggered from PR")
 
 	c.prLabels = ParseGHLabels(pr.Labels)
+
+	// Unassign reviewer on approval
+	if pre.Review != nil {
+		if strings.ToLower(pre.Review.GetState()) == "approve" {
+			users := []*gh.User{
+				pre.Review.GetUser(),
+			}
+			err := c.Unassign(context.TODO(), owner, repoName, prNumber, users)
+			if err != nil {
+				c.log.Info().Fields(map[string]interface{}{
+					"error":     err,
+					"pr-number": prNumber,
+				}).Msg("Unable to remove assignees from PR")
+				return err
+			}
+		}
+	}
 
 	// if len(cfg.AutoMerge.Label) != 0 {
 	if true {
