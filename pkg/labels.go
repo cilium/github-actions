@@ -17,7 +17,7 @@ package actions
 import (
 	"context"
 
-	gh "github.com/google/go-github/v32/github"
+	gh "github.com/google/go-github/v35/github"
 )
 
 // ParseGHLabels parses the github labels into a map of labels (a set)

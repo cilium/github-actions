@@ -23,7 +23,7 @@ import (
 	"strconv"
 	"strings"
 
-	gh "github.com/google/go-github/v32/github"
+	gh "github.com/google/go-github/v35/github"
 	"github.com/gregjones/httpcache"
 	"github.com/palantir/go-baseapp/baseapp"
 	"github.com/palantir/go-githubapp/githubapp"

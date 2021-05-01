@@ -20,7 +20,7 @@ import (
 	"strings"
 	"time"
 
-	gh "github.com/google/go-github/v32/github"
+	gh "github.com/google/go-github/v35/github"
 )
 
 type MsgInCommit struct {

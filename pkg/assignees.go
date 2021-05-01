@@ -17,7 +17,7 @@ package actions
 import (
 	"context"
 
-	gh "github.com/google/go-github/v32/github"
+	gh "github.com/google/go-github/v35/github"
 )
 
 type assignHandler func(ctx context.Context, owner, repo string, number int, assignees []string) (*gh.Issue, *gh.Response, error)
