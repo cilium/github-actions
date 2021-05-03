@@ -190,7 +190,7 @@ func (c *Client) HandlePRRE(cfg PRBlockerConfig, pre *gh.PullRequestReviewEvent)
 
 	// Unassign reviewer on approval
 	if pre.Review != nil {
-		if strings.ToLower(pre.Review.GetState()) == "approve" {
+		if strings.ToLower(pre.Review.GetState()) == "approved" {
 			users := []*gh.User{
 				pre.Review.GetUser(),
 			}
