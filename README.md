@@ -5,7 +5,7 @@ in `github.com/cilium/cilium`
 
 ## Configuration
 
-Configuration needs to located at `.github/cilium-actions.yml`.
+Configuration needs to located at `.github/maintainers-little-helper.yml`.
 
 All the supported options are:
 
