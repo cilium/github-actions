@@ -15,10 +15,13 @@
 package main
 
 import (
+	"context"
 	"errors"
+	"flag"
 	"fmt"
 	"net/http"
 	"os"
+	"os/signal"
 	"strconv"
 	"strings"
 
@@ -33,6 +36,28 @@ import (
 )
 
 var logger = zerolog.New(os.Stdout).With().Timestamp().Logger()
+
+var (
+	orgName    string
+	clientMode bool
+)
+
+func init() {
+	flag.StringVar(&orgName, "org", "cilium", "GitHub organization name (for client-mode)")
+	flag.BoolVar(&clientMode, "client-mode", false, "Runs MLH in client mode (useful for development)")
+	flag.Parse()
+
+	go signals()
+}
+
+var globalCtx, cancel = context.WithCancel(context.Background())
+
+func signals() {
+	signalCh := make(chan os.Signal, 1)
+	signal.Notify(signalCh, os.Interrupt)
+	<-signalCh
+	cancel()
+}
 
 func main() {
 	port, err := strconv.ParseUint(os.Getenv("LISTEN_PORT"), 10, 16)
