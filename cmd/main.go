@@ -15,19 +15,14 @@
 package main
 
 import (
-	"context"
 	"errors"
-	"flag"
 	"fmt"
 	"net/http"
 	"os"
-	"os/signal"
 	"strconv"
 	"strings"
 
-	actions "github.com/cilium/github-actions/pkg"
 	"github.com/cilium/github-actions/pkg/github"
-	gh "github.com/google/go-github/v35/github"
 	"github.com/gregjones/httpcache"
 	"github.com/palantir/go-baseapp/baseapp"
 	"github.com/palantir/go-githubapp/githubapp"
@@ -37,29 +32,16 @@ import (
 
 var logger = zerolog.New(os.Stdout).With().Timestamp().Logger()
 
-var (
-	orgName    string
-	clientMode bool
-)
-
-func init() {
-	flag.StringVar(&orgName, "org", "cilium", "GitHub organization name (for client-mode)")
-	flag.BoolVar(&clientMode, "client-mode", false, "Runs MLH in client mode (useful for development)")
-	flag.Parse()
-
-	go signals()
-}
-
-var globalCtx, cancel = context.WithCancel(context.Background())
-
-func signals() {
-	signalCh := make(chan os.Signal, 1)
-	signal.Notify(signalCh, os.Interrupt)
-	<-signalCh
-	cancel()
-}
-
 func main() {
+	if clientMode {
+		runClient()
+		return
+	}
+
+	runServer()
+}
+
+func runServer() {
 	port, err := strconv.ParseUint(os.Getenv("LISTEN_PORT"), 10, 16)
 	if err != nil {
 		panic(err)
@@ -110,13 +92,13 @@ func main() {
 	}
 }
 
-func getActionsCfg(ghClient *gh.Client, owner, repoName, ghSha string) (string, []byte, error) {
+func getActionsCfg(ghClient *github.Client, owner, repoName, ghSha string) (string, []byte, error) {
 	actionCfgPath := os.Getenv("CONFIG_PATHS")
 	configPaths := strings.Split(actionCfgPath, ",")
 	for _, configPath := range configPaths {
-		cfgFile, err := github.GetConfigFile(ghClient, owner, repoName, configPath, ghSha)
+		cfgFile, err := ghClient.GetConfigFile(owner, repoName, configPath, ghSha)
 		switch {
-		case actions.IsNotFound(err) || actions.IsNotFound(errors.Unwrap(err)):
+		case github.IsNotFound(err) || github.IsNotFound(errors.Unwrap(err)):
 			continue
 		case err != nil:
 			return "", nil, fmt.Errorf("unable to get config %q file: %s %T\n", configPath, err, errors.Unwrap(err))

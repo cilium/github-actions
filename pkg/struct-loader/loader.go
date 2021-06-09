@@ -12,14 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package struct_loader
 
 import (
-	"github.com/palantir/go-baseapp/baseapp"
-	"github.com/palantir/go-githubapp/githubapp"
+	"encoding/json"
+	"os"
 )
 
-type Config struct {
-	Server baseapp.HTTPConfig `yaml:"server"`
-	Github githubapp.Config   `yaml:"github"`
+func StoreStruct(filename string, strukt interface{}) error {
+	f, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	e := json.NewEncoder(f)
+	e.SetIndent("", " ")
+	return e.Encode(strukt)
+}
+
+func LoadStruct(filename string, strukt interface{}) error {
+	f, err := os.Open(filename)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	return json.NewDecoder(f).Decode(strukt)
 }

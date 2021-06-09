@@ -1,4 +1,4 @@
-// Copyright 2020 Authors of Cilium
+// Copyright 2020-2021 Authors of Cilium
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package actions
+package github
 
 import (
 	"context"
@@ -53,10 +53,10 @@ func (c *Client) manageAssignees(ctx context.Context, owner string, name string,
 
 func (c *Client) Assign(ctx context.Context, owner string, name string, number int, users []*gh.User) (err error) {
 	return c.manageAssignees(ctx, owner, name, number, users,
-		c.gh.Issues.AddAssignees, "Added assignees to PR")
+		c.GHCli.Issues.AddAssignees, "Added assignees to PR")
 }
 
 func (c *Client) Unassign(ctx context.Context, owner string, name string, number int, users []*gh.User) (err error) {
 	return c.manageAssignees(ctx, owner, name, number, users,
-		c.gh.Issues.RemoveAssignees, "Remove assignees from PR")
+		c.GHCli.Issues.RemoveAssignees, "Remove assignees from PR")
 }

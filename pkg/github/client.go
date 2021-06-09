@@ -1,4 +1,4 @@
-// Copyright 2019 Authors of Cilium
+// Copyright 2019-2021 Authors of Cilium
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,26 +17,53 @@ package github
 import (
 	"context"
 	"fmt"
+	"time"
 
+	"github.com/cilium/github-actions/pkg/jenkins"
 	gh "github.com/google/go-github/v35/github"
+	"github.com/rs/zerolog"
 	"golang.org/x/oauth2"
 )
 
-func NewClient(ghToken string) *gh.Client {
-	return gh.NewClient(
-		oauth2.NewClient(
-			context.Background(),
-			oauth2.StaticTokenSource(
-				&oauth2.Token{
-					AccessToken: ghToken,
-				},
-			),
-		),
-	)
+type Client struct {
+	GHCli      *gh.Client
+	log        *zerolog.Logger
+	orgName    string
+	repoName   string
+	prLabels   map[string]struct{}
+	clientMode bool
 }
 
-func GetConfigFile(ghClient *gh.Client, owner, repoName, file, sha string) ([]byte, error) {
-	fileContent, _, _, err := ghClient.Repositories.GetContents(
+func NewClient(ghToken string, orgName, repo string, logger *zerolog.Logger) *Client {
+	return &Client{
+		GHCli: gh.NewClient(
+			oauth2.NewClient(
+				context.Background(),
+				oauth2.StaticTokenSource(
+					&oauth2.Token{
+						AccessToken: ghToken,
+					},
+				),
+			),
+		),
+		orgName:    orgName,
+		repoName:   repo,
+		clientMode: true,
+		log:        logger,
+	}
+}
+
+func NewClientFromGHClient(ghCli *gh.Client, orgName, repo string, logger *zerolog.Logger) *Client {
+	return &Client{
+		GHCli:    ghCli,
+		log:      logger,
+		orgName:  orgName,
+		repoName: repo,
+	}
+}
+
+func (c *Client) GetConfigFile(owner, repoName, file, sha string) ([]byte, error) {
+	fileContent, _, _, err := c.GHCli.Repositories.GetContents(
 		context.Background(),
 		owner,
 		repoName,
@@ -52,4 +79,74 @@ func GetConfigFile(ghClient *gh.Client, owner, repoName, file, sha string) ([]by
 	}
 
 	return []byte(content), nil
+}
+
+// GetFailedJenkinsURLs returns a slice of URLs of tests that failed for the
+// given commit SHA.
+func (c *Client) GetFailedJenkinsURLs(parentCtx context.Context, owner, repoName string, sha string) ([]string, error) {
+
+	var (
+		cancels []context.CancelFunc
+	)
+	defer func() {
+		for _, cancel := range cancels {
+			cancel()
+		}
+	}()
+
+	var ciFailures []string
+	nextPage := 0
+	for {
+		ctx, cancel := context.WithTimeout(parentCtx, 30*time.Second)
+		cancels = append(cancels, cancel)
+		gs, resp, err := c.GHCli.Repositories.GetCombinedStatus(ctx, owner, repoName, sha, &gh.ListOptions{
+			Page: nextPage,
+		})
+		if err != nil {
+			return nil, err
+		}
+		for _, statuses := range gs.Statuses {
+			if jenkins.IsJenkinsFailure(statuses.GetState(), statuses.GetDescription()) {
+				ciFailures = append(ciFailures, statuses.GetTargetURL())
+			}
+		}
+		nextPage = resp.NextPage
+		if nextPage != 0 {
+			continue
+		}
+		break
+	}
+
+	// GH actions
+	// TODO detect GH flakes in GH actions
+	// ctx, cancel = context.WithTimeout(parentCtx, 30*time.Second)
+	// cancels = append(cancels, cancel)
+	// nextPage = 0
+	// for {
+	// 	lc, resp, err := c.Checks.ListCheckRunsForRef(ctx, owner, repoName, sha, &gh.ListCheckRunsOptions{
+	// 		Status: func() *string { a := "completed"; return &a }(),
+	// 		ListOptions: gh.ListOptions{
+	// 			Page: nextPage,
+	// 		},
+	// 	})
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// 	for _, cr := range lc.CheckRuns {
+	// 		fmt.Printf("State (%s): %s\n", cr.GetName(), cr.GetStatus())
+	// 	}
+	//
+	// 	nextPage = resp.NextPage
+	//
+	// 	if nextPage != 0 {
+	// 		continue
+	// 	}
+	// 	break
+	// }
+
+	return ciFailures, nil
+}
+
+func (c *Client) Log() *zerolog.Logger {
+	return c.log
 }

@@ -18,14 +18,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
+	"github.com/cilium/github-actions/pkg/github"
 	gh "github.com/google/go-github/v35/github"
 	"github.com/palantir/go-githubapp/githubapp"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"gopkg.in/yaml.v2"
-
-	actions "github.com/cilium/github-actions/pkg"
 )
 
 type PRCommentHandler struct {
@@ -33,7 +33,7 @@ type PRCommentHandler struct {
 }
 
 func (h *PRCommentHandler) Handles() []string {
-	return []string{"pull_request", "pull_request_review", "status"}
+	return []string{"pull_request", "pull_request_review", "status", "issue_comment"}
 }
 
 func (h *PRCommentHandler) Handle(ctx context.Context, eventType, deliveryID string, payload []byte) error {
@@ -48,6 +48,8 @@ func (h *PRCommentHandler) Handle(ctx context.Context, eventType, deliveryID str
 		err = h.HandlePRRE(ctx, payload)
 	case "pull_request":
 		err = h.HandlePRE(ctx, payload)
+	case "issue_comment":
+		err = h.HandleIC(ctx, payload)
 	}
 	if err != nil {
 		logger.Err(err).Msg("Unable to handle event")
@@ -64,13 +66,14 @@ func (h *PRCommentHandler) HandlePRE(ctx context.Context, payload []byte) error 
 	}
 	installationID := event.GetInstallation().GetID()
 
-	ghClient, err := h.NewInstallationClient(installationID)
+	installCli, err := h.NewInstallationClient(installationID)
 	if err != nil {
 		return err
 	}
 
 	owner := event.PullRequest.Base.Repo.GetOwner().GetLogin()
 	repoName := event.PullRequest.Base.Repo.GetName()
+	ghClient := github.NewClientFromGHClient(installCli, owner, repoName, zerolog.Ctx(ctx))
 	ghSha := event.PullRequest.Base.GetSHA()
 
 	actionCfgPath, cfgFile, err := getActionsCfg(ghClient, owner, repoName, ghSha)
@@ -81,13 +84,13 @@ func (h *PRCommentHandler) HandlePRE(ctx context.Context, payload []byte) error 
 		return fmt.Errorf("unable to find config files in sha %s", ghSha)
 	}
 
-	var c actions.PRBlockerConfig
+	var c github.PRBlockerConfig
 	err = yaml.Unmarshal(cfgFile, &c)
 	if err != nil {
 		return fmt.Errorf("unable to unmarshal config %q file: %s\n", actionCfgPath, err)
 	}
-	l := actions.NewClient(ghClient, zerolog.Ctx(ctx))
-	return l.HandlePRE(c, &event)
+
+	return ghClient.HandlePRE(c, &event)
 }
 
 func (h *PRCommentHandler) HandleSE(ctx context.Context, payload []byte) error {
@@ -97,13 +100,14 @@ func (h *PRCommentHandler) HandleSE(ctx context.Context, payload []byte) error {
 	}
 	installationID := event.GetInstallation().GetID()
 
-	ghClient, err := h.NewInstallationClient(installationID)
+	installCli, err := h.NewInstallationClient(installationID)
 	if err != nil {
 		return err
 	}
 
 	owner := event.Repo.GetOwner().GetLogin()
 	repoName := event.Repo.GetName()
+	ghClient := github.NewClientFromGHClient(installCli, owner, repoName, zerolog.Ctx(ctx))
 	ghSha := event.GetSHA()
 
 	actionCfgPath, cfgFile, err := getActionsCfg(ghClient, owner, repoName, ghSha)
@@ -114,15 +118,13 @@ func (h *PRCommentHandler) HandleSE(ctx context.Context, payload []byte) error {
 		return fmt.Errorf("unable to find config files in sha %s", ghSha)
 	}
 
-	var c actions.PRBlockerConfig
+	var c github.PRBlockerConfig
 	err = yaml.Unmarshal(cfgFile, &c)
 	if err != nil {
 		return fmt.Errorf("unable to unmarshal config %q file: %s\n", actionCfgPath, err)
 	}
-	l := actions.NewClient(ghClient, zerolog.Ctx(ctx))
 
-	return l.HandleSE(c, &event)
-
+	return ghClient.HandleSE(c, &event)
 }
 
 func (h *PRCommentHandler) HandlePRRE(ctx context.Context, payload []byte) error {
@@ -132,13 +134,14 @@ func (h *PRCommentHandler) HandlePRRE(ctx context.Context, payload []byte) error
 	}
 	installationID := event.GetInstallation().GetID()
 
-	ghClient, err := h.NewInstallationClient(installationID)
+	installCli, err := h.NewInstallationClient(installationID)
 	if err != nil {
 		return err
 	}
 
 	owner := event.PullRequest.Base.Repo.GetOwner().GetLogin()
 	repoName := event.PullRequest.Base.Repo.GetName()
+	ghClient := github.NewClientFromGHClient(installCli, owner, repoName, zerolog.Ctx(ctx))
 	ghSha := event.PullRequest.Base.GetSHA()
 
 	actionCfgPath, cfgFile, err := getActionsCfg(ghClient, owner, repoName, ghSha)
@@ -149,12 +152,84 @@ func (h *PRCommentHandler) HandlePRRE(ctx context.Context, payload []byte) error
 		return fmt.Errorf("unable to find config files in sha %s", ghSha)
 	}
 
-	var c actions.PRBlockerConfig
+	var c github.PRBlockerConfig
 	err = yaml.Unmarshal(cfgFile, &c)
 	if err != nil {
 		return fmt.Errorf("unable to unmarshal config %q file: %s\n", actionCfgPath, err)
 	}
-	l := actions.NewClient(ghClient, zerolog.Ctx(ctx))
 
-	return l.HandlePRRE(c, &event)
+	return ghClient.HandlePRRE(c, &event)
+}
+
+func (h *PRCommentHandler) HandleIC(ctx context.Context, payload []byte) error {
+	var event gh.IssueCommentEvent
+	if err := json.Unmarshal(payload, &event); err != nil {
+		return errors.Wrap(err, "failed to parse issue comment event payload")
+	}
+
+	// Ignore any issue event that's not from a PR
+	if !event.GetIssue().IsPullRequest() {
+		return nil
+	}
+
+	// We don't support modified comments, only newly created
+	if !event.GetComment().GetCreatedAt().Equal(event.GetComment().GetUpdatedAt()) {
+		zerolog.Ctx(ctx).Info().Msgf("Not a new comment: %s", event.GetComment().GetBody())
+		return nil
+	}
+
+	body := event.GetComment().GetBody()
+
+	switch github.IsMLHCommand(body) {
+	case github.MLHCommandNewFlake:
+	default:
+		if len(body) >= 30 {
+			body = body[:30]
+		}
+		zerolog.Ctx(ctx).Info().Fields(map[string]interface{}{"body": body}).Msg("Not a MLH command")
+		return nil
+	}
+
+	jobName := strings.Replace(body, string(github.MLHCommandNewFlake), "", -1)
+
+	if jobName == "" {
+		return fmt.Errorf("empty job name: %s", body)
+	}
+
+	installationID := event.GetInstallation().GetID()
+
+	installCli, err := h.NewInstallationClient(installationID)
+	if err != nil {
+		return err
+	}
+
+	owner := event.Repo.GetOwner().GetLogin()
+	repoName := event.Repo.GetName()
+
+	ghClient := github.NewClientFromGHClient(installCli, owner, repoName, zerolog.Ctx(ctx))
+
+	prNumber := event.GetIssue().GetNumber()
+
+	pr, _, err := ghClient.GHCli.PullRequests.Get(ctx, owner, repoName, prNumber)
+	if err != nil {
+		return err
+	}
+
+	ghSha := pr.GetBase().GetSHA()
+
+	actionCfgPath, cfgFile, err := getActionsCfg(ghClient, owner, repoName, ghSha)
+	if err != nil {
+		return err
+	}
+	if actionCfgPath == "" {
+		return fmt.Errorf("unable to find config files in sha %s", ghSha)
+	}
+
+	var c github.PRBlockerConfig
+	err = yaml.Unmarshal(cfgFile, &c)
+	if err != nil {
+		return fmt.Errorf("unable to unmarshal config %q file: %s\n", actionCfgPath, err)
+	}
+
+	return ghClient.HandleIC(ctx, c.FlakeTracker, jobName, pr, &event)
 }

@@ -1,4 +1,4 @@
-// Copyright 2019 Authors of Cilium
+// Copyright 2019-2021 Authors of Cilium
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package actions
+package github
 
 import (
 	"context"
@@ -48,7 +48,7 @@ func (c *Client) AutoLabel(labels []string, owner string, repoName string, prNum
 		return nil
 	}
 
-	_, _, err := c.gh.Issues.AddLabelsToIssue(
+	_, _, err := c.GHCli.Issues.AddLabelsToIssue(
 		context.Background(), owner, repoName, prNumber, labels)
 	return err
 }

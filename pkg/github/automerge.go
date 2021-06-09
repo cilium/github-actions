@@ -1,4 +1,4 @@
-// Copyright 2020 Authors of Cilium
+// Copyright 2020-2021 Authors of Cilium
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package actions
+package github
 
 import (
 	"context"
@@ -52,7 +52,7 @@ func (c *Client) AutoMerge(
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	commit, _, err := c.gh.Repositories.GetCommit(ctx, owner, repoName, head.GetSHA())
+	commit, _, err := c.GHCli.Repositories.GetCommit(ctx, owner, repoName, head.GetSHA())
 	if err != nil {
 		return err
 	}
@@ -112,7 +112,7 @@ func (c *Client) AutoMerge(
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
-		_, _, err = c.gh.PullRequests.RequestReviewers(ctx, owner, repoName, prNumber, gh.ReviewersRequest{
+		_, _, err = c.GHCli.PullRequests.RequestReviewers(ctx, owner, repoName, prNumber, gh.ReviewersRequest{
 			Reviewers: requestedReviews,
 		})
 		// We don't continue if we just have requested for new reviews
@@ -155,7 +155,7 @@ func (c *Client) AutoMerge(
 		// a PR review event (review != nil).
 		if _, ok := c.prLabels[cfg.Label]; ok || review != nil {
 			c.log.Info().Msg("Removing ready-to-merge label")
-			_, err := c.gh.Issues.RemoveLabelForIssue(
+			_, err := c.GHCli.Issues.RemoveLabelForIssue(
 				context.Background(), owner, repoName, prNumber, cfg.Label)
 			if err != nil && !IsNotFound(err) {
 				return err
@@ -168,7 +168,7 @@ func (c *Client) AutoMerge(
 	if false {
 		ctx, cancel = context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
-		_, _, err = c.gh.Issues.CreateComment(ctx, owner, repoName, prNumber, &gh.IssueComment{
+		_, _, err = c.GHCli.Issues.CreateComment(ctx, owner, repoName, prNumber, &gh.IssueComment{
 			Body: func() *string { a := fmt.Sprintf("Setting %s to let a human merge this PR.", cfg.Label); return &a }(),
 		})
 		if err != nil {
@@ -178,7 +178,7 @@ func (c *Client) AutoMerge(
 
 	ctx, cancel = context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	_, _, err = c.gh.Issues.AddLabelsToIssue(ctx, owner, repoName, prNumber, []string{cfg.Label})
+	_, _, err = c.GHCli.Issues.AddLabelsToIssue(ctx, owner, repoName, prNumber, []string{cfg.Label})
 	if err != nil {
 		return err
 	}
@@ -215,7 +215,7 @@ func (c *Client) getCIStatus(
 	cancels = append(cancels, cancel)
 	nextPage := 0
 
-	brProt, _, err := c.gh.Repositories.GetBranchProtection(ctx, owner, repoName, base.GetRef())
+	brProt, _, err := c.GHCli.Repositories.GetBranchProtection(ctx, owner, repoName, base.GetRef())
 	if err != nil {
 		return nil, err
 	}
@@ -229,7 +229,7 @@ func (c *Client) getCIStatus(
 	for {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		cancels = append(cancels, cancel)
-		gs, resp, err := c.gh.Repositories.GetCombinedStatus(ctx, owner, repoName, head.GetSHA(), &gh.ListOptions{
+		gs, resp, err := c.GHCli.Repositories.GetCombinedStatus(ctx, owner, repoName, head.GetSHA(), &gh.ListOptions{
 			Page: nextPage,
 		})
 		if err != nil {
@@ -251,7 +251,7 @@ func (c *Client) getCIStatus(
 
 	nextPage = 0
 	for {
-		lc, resp, err := c.gh.Checks.ListCheckRunsForRef(ctx, owner, repoName, head.GetSHA(), &gh.ListCheckRunsOptions{
+		lc, resp, err := c.GHCli.Checks.ListCheckRunsForRef(ctx, owner, repoName, head.GetSHA(), &gh.ListCheckRunsOptions{
 			Status: func() *string { a := "completed"; return &a }(),
 			ListOptions: gh.ListOptions{
 				Page: nextPage,
@@ -327,7 +327,7 @@ func (c *Client) getReviews(owner string, repoName string, prNumber int) (map[st
 	for {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		cancels = append(cancels, cancel)
-		reviews, resp, err := c.gh.PullRequests.ListReviews(ctx, owner, repoName, prNumber, &gh.ListOptions{
+		reviews, resp, err := c.GHCli.PullRequests.ListReviews(ctx, owner, repoName, prNumber, &gh.ListOptions{
 			Page: nextPage,
 		})
 
@@ -358,7 +358,7 @@ func (c *Client) getPendingReviews(owner string, repoName string, prNumber int) 
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		cancels = append(cancels, cancel)
 
-		reviewers, resp, err := c.gh.PullRequests.ListReviewers(ctx, owner, repoName, prNumber, &gh.ListOptions{
+		reviewers, resp, err := c.GHCli.PullRequests.ListReviewers(ctx, owner, repoName, prNumber, &gh.ListOptions{
 			Page: nextPage,
 		})
 		if err != nil {

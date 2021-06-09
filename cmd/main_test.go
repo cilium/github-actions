@@ -19,20 +19,19 @@ import (
 	"os"
 	"testing"
 
+	"github.com/cilium/github-actions/pkg/github"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v2"
-
-	"github.com/cilium/github-actions/pkg"
 )
 
 func TestConfigParser(t *testing.T) {
 
-	expect := actions.PRBlockerConfig{
-		Project: actions.Project{
+	expect := github.PRBlockerConfig{
+		Project: github.Project{
 			ProjectName: "https://github.com/cilium/cilium/projects/80",
 			ColumnName:  "In progress",
 		},
-		MoveToProjectsForLabelsXORed: map[string]map[string]actions.Project{
+		MoveToProjectsForLabelsXORed: map[string]map[string]github.Project{
 			"v1.6": {
 				"needs-backport/1.6": {
 					ProjectName: "https://github.com/cilium/cilium/projects/91",
@@ -62,7 +61,7 @@ func TestConfigParser(t *testing.T) {
 				},
 			},
 		},
-		RequireMsgsInCommit: []actions.MsgInCommit{
+		RequireMsgsInCommit: []github.MsgInCommit{
 			{
 				Msg:    "Signed-off-by",
 				Helper: "https://docs.cilium.io/en/stable/contributing/contributing/#developer-s-certificate-of-origin",
@@ -74,8 +73,8 @@ func TestConfigParser(t *testing.T) {
 		AutoLabel: []string{
 			"pending-review",
 		},
-		BlockPRWith: actions.BlockPRWith{
-			LabelsUnset: []actions.PRLabelConfig{
+		BlockPRWith: github.BlockPRWith{
+			LabelsUnset: []github.PRLabelConfig{
 				{
 					RegexLabel: "release-note/.*",
 					Helper:     "Release note label not set, please set the appropriate release note.",
@@ -84,7 +83,7 @@ func TestConfigParser(t *testing.T) {
 					},
 				},
 			},
-			LabelsSet: []actions.PRLabelConfig{
+			LabelsSet: []github.PRLabelConfig{
 				{
 					RegexLabel: "dont-merge/.*",
 					Helper:     "Blocking mergeability of PR as 'dont-merge/.*' labels are set",
@@ -102,7 +101,7 @@ func TestConfigParser(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	var c actions.PRBlockerConfig
+	var c github.PRBlockerConfig
 	err = yaml.Unmarshal(contents, &c)
 	assert.Equal(t, expect, c)
 }

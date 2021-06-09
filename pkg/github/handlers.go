@@ -1,4 +1,4 @@
-// Copyright 2019-2020 Authors of Cilium
+// Copyright 2019-2021 Authors of Cilium
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,17 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package actions
+package github
 
 import (
 	"context"
 	"errors"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 
+	"github.com/cilium/github-actions/pkg/jenkins"
 	gh "github.com/google/go-github/v35/github"
-	"github.com/rs/zerolog"
 )
 
 type PRBlockerConfig struct {
@@ -32,20 +33,7 @@ type PRBlockerConfig struct {
 	AutoLabel                    []string                      `yaml:"auto-label,omitempty"`
 	BlockPRWith                  BlockPRWith                   `yaml:"block-pr-with,omitempty"`
 	AutoMerge                    AutoMerge                     `yaml:"auto-merge,omitempty"`
-}
-
-type Client struct {
-	gh       *gh.Client
-	log      *zerolog.Logger
-	prLabels map[string]struct{}
-}
-
-func NewClient(ghClient *gh.Client, logger *zerolog.Logger) *Client {
-	return &Client{
-		gh:       ghClient,
-		log:      logger,
-		prLabels: map[string]struct{}{},
-	}
+	FlakeTracker                 *FlakeConfig                  `yaml:"flake-tracker,omitempty"`
 }
 
 func (c *Client) HandlePRE(cfg PRBlockerConfig, pre *gh.PullRequestEvent) error {
@@ -148,7 +136,7 @@ func (c *Client) HandlePRE(cfg PRBlockerConfig, pre *gh.PullRequestEvent) error 
 			// Remove ready-to-merge label if it is present and the developer
 			// synchronized the PR
 			if _, ok := c.prLabels[cfg.AutoMerge.Label]; ok {
-				_, err := c.gh.Issues.RemoveLabelForIssue(
+				_, err := c.GHCli.Issues.RemoveLabelForIssue(
 					context.Background(), owner, repoName, prNumber, cfg.AutoMerge.Label)
 				if err != nil {
 					return err
@@ -230,7 +218,13 @@ func (c *Client) HandleSE(cfg PRBlockerConfig, se *gh.StatusEvent) error {
 	}
 
 	var (
-		cancels []context.CancelFunc
+		cancels               []context.CancelFunc
+		urlFails              []string
+		triggerRegexp         *regexp.Regexp
+		err                   error
+		issueKnownFlakes      map[int]jenkins.GHIssue
+		jc                    *jenkins.JenkinsClient
+		jobNameToJenkinsFails = map[string]jenkins.JenkinsFailures{}
 	)
 	defer func() {
 		for _, cancel := range cancels {
@@ -238,11 +232,37 @@ func (c *Client) HandleSE(cfg PRBlockerConfig, se *gh.StatusEvent) error {
 		}
 	}()
 
+	triage := cfg.FlakeTracker != nil && jenkins.IsJenkinsFailure(se.GetState(), se.GetDescription())
+
+	if triage {
+		c.Log().Info().Msg("Triaging flake")
+
+		// Check for potential flakes
+		urlFails = []string{se.GetTargetURL()}
+
+		triggerRegexp, err = regexp.Compile(cfg.FlakeTracker.JenkinsConfig.RegexTrigger)
+		if err != nil {
+			return err
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		cancels = append(cancels, cancel)
+
+		issueKnownFlakes, err = c.GetFlakeIssues(ctx, owner, repoName, IssueCreator, cfg.FlakeTracker.IssueTracker.IssueLabels)
+		if err != nil {
+			return err
+		}
+
+		jc, err = jenkins.NewJenkinsClient(ctx, cfg.FlakeTracker.JenkinsConfig.JenkinsURL, false)
+		if err != nil {
+			return err
+		}
+	}
+
 	for {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		cancels = append(cancels, cancel)
-		prs, resp, err := c.gh.PullRequests.ListPullRequestsWithCommit(ctx, owner, repoName, se.GetSHA(), &gh.PullRequestListOptions{
-			Head: se.GetSHA(),
+		issues, resp, err := c.GHCli.Search.Issues(ctx, se.GetSHA(), &gh.SearchOptions{
 			ListOptions: gh.ListOptions{
 				Page: nextPage,
 			},
@@ -250,9 +270,32 @@ func (c *Client) HandleSE(cfg PRBlockerConfig, se *gh.StatusEvent) error {
 		if err != nil {
 			return err
 		}
-		for _, pr := range prs {
-			if !pr.GetDraft() {
-				err := c.AutoMerge(cfg.AutoMerge, owner, repoName, pr.GetBase(), pr.GetHead(), pr.GetNumber(), nil)
+		for _, pr := range issues.Issues {
+			o, r := OwnerRepoFromRepositoryURL(pr.GetRepositoryURL())
+			if o != c.orgName || r != c.repoName {
+				continue
+			}
+			pr, _, err := c.GHCli.PullRequests.Get(ctx, o, r, pr.GetNumber())
+			if err != nil {
+				c.Log().Warn().Msgf("Unable to get PR for sha %s", se.GetSHA())
+				continue
+			}
+			if pr.GetDraft() {
+				c.Log().Info().Fields(map[string]interface{}{"pr-number": pr.GetNumber()}).Msgf("PR is in draft")
+				continue
+			}
+			err = c.AutoMerge(cfg.AutoMerge, owner, repoName, pr.GetBase(), pr.GetHead(), pr.GetNumber(), nil)
+			if err != nil {
+				return err
+			}
+
+			if triage {
+				baseBranch := pr.GetBase().GetRef()
+				c.Log().Info().Fields(map[string]interface{}{
+					"pr":          pr.GetNumber(),
+					"base-branch": baseBranch,
+				}).Msg("Triaging flake")
+				err = c.TriagePRFailures(ctx, jc, cfg.FlakeTracker, pr.GetNumber(), urlFails, issueKnownFlakes, jobNameToJenkinsFails, triggerRegexp)
 				if err != nil {
 					return err
 				}
@@ -283,4 +326,14 @@ func IsHTTPErrorCode(err error, httpCode int) bool {
 	}
 
 	return false
+}
+
+func OwnerRepoFromRepositoryURL(s string) (owner, repo string) {
+	path := strings.Split(s, "/")
+	if len(path) < 2 {
+		return "", ""
+	}
+	owner = path[len(path)-2]
+	repo = path[len(path)-1]
+	return
 }

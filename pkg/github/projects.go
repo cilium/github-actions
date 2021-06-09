@@ -1,4 +1,4 @@
-// Copyright 2019 Authors of Cilium
+// Copyright 2019-2021 Authors of Cilium
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package actions
+package github
 
 import (
 	"context"
@@ -65,7 +65,7 @@ func (c *Client) getProjectID(owner, repoName, projURL string) (int64, error) {
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		cancels = append(cancels, cancel)
-		projects, resp, err := c.gh.Repositories.ListProjects(ctx, owner, repoName, plo)
+		projects, resp, err := c.GHCli.Repositories.ListProjects(ctx, owner, repoName, plo)
 		if err != nil {
 			return 0, err
 		}
@@ -106,7 +106,7 @@ func (c *Client) GetColumnID(owner, repoName string, project Project) (int64, in
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		cancels = append(cancels, cancel)
-		columns, resp, err := c.gh.Projects.ListProjectColumns(ctx, projectID, lo)
+		columns, resp, err := c.GHCli.Projects.ListProjectColumns(ctx, projectID, lo)
 		if err != nil {
 			return 0, 0, err
 		}
@@ -134,7 +134,7 @@ func (c *Client) PutPRInProject(owner, repoName string, prID int64, project Proj
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	_, _, err = c.gh.Projects.CreateProjectCard(ctx, columnID, &gh.ProjectCardOptions{
+	_, _, err = c.GHCli.Projects.CreateProjectCard(ctx, columnID, &gh.ProjectCardOptions{
 		ContentID:   prID,
 		ContentType: "PullRequest",
 	})
@@ -179,7 +179,7 @@ func (c *Client) FindPRInProject(owner, repoName string, prNumber int, project P
 
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		cancels = append(cancels, cancel)
-		projectCards, resp, err := c.gh.Projects.ListProjectCards(ctx, columnID, pclo)
+		projectCards, resp, err := c.GHCli.Projects.ListProjectCards(ctx, columnID, pclo)
 		if err != nil {
 			return 0, 0, err
 		}
@@ -213,7 +213,7 @@ func (c *Client) GetOrCreateColumnID(owner, repoName string, proj Project) (int6
 	}).Msg("Column not found in project")
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	column, _, err := c.gh.Projects.CreateProjectColumn(ctx, projectID, &gh.ProjectColumnOptions{
+	column, _, err := c.GHCli.Projects.CreateProjectColumn(ctx, projectID, &gh.ProjectColumnOptions{
 		Name: proj.ColumnName,
 	})
 	if err != nil {
@@ -302,7 +302,7 @@ func (c *Client) SyncPRProjects(
 				if columnID != cardColumnID {
 					ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 					cancels = append(cancels, cancel)
-					_, err = c.gh.Projects.MoveProjectCard(ctx, cardID, &gh.ProjectCardMoveOptions{
+					_, err = c.GHCli.Projects.MoveProjectCard(ctx, cardID, &gh.ProjectCardMoveOptions{
 						Position: "top",
 						ColumnID: columnID,
 					})
@@ -314,7 +314,7 @@ func (c *Client) SyncPRProjects(
 				// card was not found so we have to create it!
 				ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 				cancels = append(cancels, cancel)
-				_, _, err := c.gh.Projects.CreateProjectCard(ctx, columnID, &gh.ProjectCardOptions{
+				_, _, err := c.GHCli.Projects.CreateProjectCard(ctx, columnID, &gh.ProjectCardOptions{
 					ContentID:   prID,
 					ContentType: "PullRequest",
 				})
@@ -342,7 +342,7 @@ func (c *Client) SyncPRProjects(
 				}
 				ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 				cancels = append(cancels, cancel)
-				_, err = c.gh.Projects.DeleteProjectCard(ctx, cardID)
+				_, err = c.GHCli.Projects.DeleteProjectCard(ctx, cardID)
 				if err != nil && !IsNotFound(err) {
 					return err
 				}
