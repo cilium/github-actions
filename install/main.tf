@@ -40,8 +40,8 @@ module "gce-advanced-container" {
         value = "80"
       },
       {
-        name  = "CONFIG_PATH"
-        value = ".github/cilium-actions.yml"
+        name  = "CONFIG_PATHS"
+        value = ".github/cilium-actions.yml,.github/maintainers-little-helper.yaml"
       },
       {
         name  = "LISTEN_ADDRESS"
