@@ -129,14 +129,18 @@ func (h *PRCommentHandler) HandlePRE(ctx context.Context, payload []byte) error 
 	if err != nil {
 		return err
 	}
-	actionCfgPath := os.Getenv("CONFIG_PATH")
 	owner := event.PullRequest.Base.Repo.GetOwner().GetLogin()
 	repoName := event.PullRequest.Base.Repo.GetName()
 	ghSha := event.PullRequest.Base.GetSHA()
-	cfgFile, err := github.GetConfigFile(ghClient, owner, repoName, actionCfgPath, ghSha)
+
+	actionCfgPath, cfgFile, err := getActionsCfg(ghClient, owner, repoName, ghSha)
 	if err != nil {
-		return fmt.Errorf("unable to get config %q file: %s\n", actionCfgPath, err)
+		return err
 	}
+	if actionCfgPath == "" {
+		return fmt.Errorf("unable to find config files in sha %s", ghSha)
+	}
+
 	var c actions.PRBlockerConfig
 	err = yaml.Unmarshal(cfgFile, &c)
 	if err != nil {
@@ -146,7 +150,7 @@ func (h *PRCommentHandler) HandlePRE(ctx context.Context, payload []byte) error 
 	return l.HandlePRE(c, &event)
 }
 
-func (h *PRCommentHandler) HandleSE(ctx context.Context, payload []byte) error{
+func (h *PRCommentHandler) HandleSE(ctx context.Context, payload []byte) error {
 	var event gh.StatusEvent
 	if err := json.Unmarshal(payload, &event); err != nil {
 		return errors.Wrap(err, "failed to parse issue comment event payload")
@@ -157,14 +161,18 @@ func (h *PRCommentHandler) HandleSE(ctx context.Context, payload []byte) error{
 	if err != nil {
 		return err
 	}
-	actionCfgPath := os.Getenv("CONFIG_PATH")
 	owner := event.Repo.GetOwner().GetLogin()
 	repoName := event.Repo.GetName()
 	ghSha := event.GetSHA()
-	cfgFile, err := github.GetConfigFile(ghClient, owner, repoName, actionCfgPath, ghSha)
+
+	actionCfgPath, cfgFile, err := getActionsCfg(ghClient, owner, repoName, ghSha)
 	if err != nil {
-		return fmt.Errorf("unable to get config %q file: %s\n", actionCfgPath, err)
+		return err
 	}
+	if actionCfgPath == "" {
+		return fmt.Errorf("unable to find config files in sha %s", ghSha)
+	}
+
 	var c actions.PRBlockerConfig
 	err = yaml.Unmarshal(cfgFile, &c)
 	if err != nil {
@@ -187,14 +195,18 @@ func (h *PRCommentHandler) HandlePRRE(ctx context.Context, payload []byte) error
 	if err != nil {
 		return err
 	}
-	actionCfgPath := os.Getenv("CONFIG_PATH")
 	owner := event.PullRequest.Base.Repo.GetOwner().GetLogin()
 	repoName := event.PullRequest.Base.Repo.GetName()
 	ghSha := event.PullRequest.Base.GetSHA()
-	cfgFile, err := github.GetConfigFile(ghClient, owner, repoName, actionCfgPath, ghSha)
+
+	actionCfgPath, cfgFile, err := getActionsCfg(ghClient, owner, repoName, ghSha)
 	if err != nil {
-		return fmt.Errorf("unable to get config %q file: %s\n", actionCfgPath, err)
+		return err
 	}
+	if actionCfgPath == "" {
+		return fmt.Errorf("unable to find config files in sha %s", ghSha)
+	}
+
 	var c actions.PRBlockerConfig
 	err = yaml.Unmarshal(cfgFile, &c)
 	if err != nil {
@@ -203,4 +215,20 @@ func (h *PRCommentHandler) HandlePRRE(ctx context.Context, payload []byte) error
 	l := actions.NewClient(ghClient, zerolog.Ctx(ctx))
 
 	return l.HandlePRRE(c, &event)
+}
+
+func getActionsCfg(ghClient *gh.Client, owner, repoName, ghSha string) (string, []byte, error) {
+	actionCfgPath := os.Getenv("CONFIG_PATHS")
+	configPaths := strings.Split(actionCfgPath, ",")
+	for _, configPath := range configPaths {
+		cfgFile, err := github.GetConfigFile(ghClient, owner, repoName, configPath, ghSha)
+		switch {
+		case actions.IsNotFound(err) || actions.IsNotFound(errors.Unwrap(err)):
+			continue
+		case err != nil:
+			return "", nil, fmt.Errorf("unable to get config %q file: %s %T\n", configPath, err, errors.Unwrap(err))
+		}
+		return configPath, cfgFile, nil
+	}
+	return "", nil, nil
 }
