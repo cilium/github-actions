@@ -261,7 +261,7 @@ func (c *Client) getCIStatus(
 			return nil, err
 		}
 		for _, cr := range lc.CheckRuns {
-			if cr.GetConclusion() == "success" {
+			if cr.GetConclusion() == "success" || cr.GetConclusion() == "skipped" {
 				if _, ok := passedContexts[cr.GetName()]; !ok {
 					passedContexts[cr.GetName()] = true
 				}
