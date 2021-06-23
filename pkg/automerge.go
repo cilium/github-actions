@@ -219,10 +219,12 @@ func (c *Client) getCIStatus(
 	if err != nil {
 		return nil, err
 	}
-	ciContexts := map[string]struct{}{}
+	requiredContexts := map[string]struct{}{}
 	for _, ctx := range brProt.GetRequiredStatusChecks().Contexts {
-		ciContexts[ctx] = struct{}{}
+		requiredContexts[ctx] = struct{}{}
 	}
+
+	passedContexts := map[string]bool{}
 
 	for {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -235,7 +237,9 @@ func (c *Client) getCIStatus(
 		}
 		for _, statuses := range gs.Statuses {
 			if statuses.GetState() == "success" {
-				delete(ciContexts, statuses.GetContext())
+				if _, ok := passedContexts[statuses.GetContext()]; !ok {
+					passedContexts[statuses.GetContext()] = true
+				}
 			}
 		}
 		nextPage = resp.NextPage
@@ -258,7 +262,11 @@ func (c *Client) getCIStatus(
 		}
 		for _, cr := range lc.CheckRuns {
 			if cr.GetConclusion() == "success" {
-				delete(ciContexts, cr.GetName())
+				if _, ok := passedContexts[cr.GetName()]; !ok {
+					passedContexts[cr.GetName()] = true
+				}
+			} else {
+				passedContexts[cr.GetName()] = false
 			}
 		}
 
@@ -270,9 +278,16 @@ func (c *Client) getCIStatus(
 		break
 	}
 
-	ciChecks := make([]string, 0, len(ciContexts))
-	for ciCtx := range ciContexts {
-		ciChecks = append(ciChecks, ciCtx)
+	for reqCtxName := range requiredContexts {
+		// Remove the contexts that have passed from the requiredContexts
+		if passedContexts[reqCtxName] {
+			delete(requiredContexts, reqCtxName)
+		}
+	}
+
+	ciChecks := make([]string, 0, len(requiredContexts))
+	for reqCtxName := range requiredContexts {
+		ciChecks = append(ciChecks, reqCtxName)
 	}
 
 	return ciChecks, nil
