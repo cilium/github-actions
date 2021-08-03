@@ -4,16 +4,16 @@ go 1.16
 
 require (
 	github.com/bndr/gojenkins v1.1.0
-	github.com/google/go-github/v35 v35.1.0
+	github.com/google/go-github/v37 v37.0.0
 	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79
-	github.com/palantir/go-baseapp v0.2.3
-	github.com/palantir/go-githubapp v0.7.0
+	github.com/palantir/go-baseapp v0.2.4
+	github.com/palantir/go-githubapp v0.8.0
 	github.com/pkg/errors v0.9.1
-	github.com/rs/zerolog v1.21.0
+	github.com/rs/zerolog v1.23.0
 	github.com/sergi/go-diff v1.2.0
 	github.com/stretchr/testify v1.7.0
 	goji.io v2.0.2+incompatible
-	golang.org/x/oauth2 v0.0.0-20210427180440-81ed05c6b58c
-	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
+	golang.org/x/oauth2 v0.0.0-20210628180205-a41e5a781914
+	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	gopkg.in/yaml.v2 v2.4.0
 )

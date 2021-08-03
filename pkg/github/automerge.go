@@ -20,7 +20,7 @@ import (
 	"strings"
 	"time"
 
-	gh "github.com/google/go-github/v35/github"
+	gh "github.com/google/go-github/v37/github"
 )
 
 type AutoMerge struct {
