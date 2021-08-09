@@ -109,24 +109,33 @@ func (c *Client) HandleIC(ctx context.Context, cfg *FlakeConfig, jobName string,
 		return fmt.Errorf("job #%d of %q had 0 failures / flakes", failedJobNumber, jobName)
 	}
 
-	for _, jobFailure := range jobFailures {
-		// Generate GH Issue comment
-		title, body, err := jenkins.GHIssueDescription(jobFailure)
-		if err != nil {
-			return fmt.Errorf("unable to generate GH issue description: %w", err)
+	var comment string
+
+	// Do not create more GH issues than the ones specified by 'MaxFlakesPerTest'
+	if len(jobFailures) < cfg.MaxFlakesPerTest {
+		for _, jobFailure := range jobFailures {
+			// Generate GH Issue comment
+			title, body, err := jenkins.GHIssueDescription(jobFailure)
+			if err != nil {
+				return fmt.Errorf("unable to generate GH issue description: %w", err)
+			}
+
+			// Create a GH issue
+			issueNumber, err := c.CreateIssue(ctx, c.orgName, c.repoName, title, body, cfg.IssueTracker.IssueLabels)
+			if err != nil {
+				return fmt.Errorf("unable to create GH issue: %w", err)
+			}
+			issueNumbers = append(issueNumbers, issueNumber)
 		}
 
-		// Create a GH issue
-		issueNumber, err := c.CreateIssue(ctx, c.orgName, c.repoName, title, body, cfg.IssueTracker.IssueLabels)
+		comment, err = jenkins.PRCommentNewGHIssues(issueNumbers)
 		if err != nil {
-			return fmt.Errorf("unable to create GH issue: %w", err)
+			return err
 		}
-		issueNumbers = append(issueNumbers, issueNumber)
-	}
-
-	comment, err := jenkins.PRCommentNewGHIssues(issueNumbers)
-	if err != nil {
-		return err
+	} else {
+		comment = fmt.Sprintf(":-1: Unable to create GH issues: "+
+			"number of flakes (%d) exceeds the maximum permited (%d).",
+			len(jobFailures), cfg.MaxFlakesPerTest)
 	}
 
 	err = c.CreateOrAppendCommentIssueComment(ctx, prNumber, event.GetComment(), comment)
