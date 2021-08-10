@@ -252,7 +252,6 @@ func (c *Client) getCIStatus(
 	nextPage = 0
 	for {
 		lc, resp, err := c.GHCli.Checks.ListCheckRunsForRef(ctx, owner, repoName, head.GetSHA(), &gh.ListCheckRunsOptions{
-			Status: func() *string { a := "completed"; return &a }(),
 			ListOptions: gh.ListOptions{
 				Page: nextPage,
 			},
