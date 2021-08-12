@@ -7,7 +7,7 @@ require (
 	github.com/google/go-github/v37 v37.0.0
 	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79
 	github.com/palantir/go-baseapp v0.2.4
-	github.com/palantir/go-githubapp v0.8.1
+	github.com/palantir/go-githubapp v0.9.0
 	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.23.0
 	github.com/sergi/go-diff v1.2.0
