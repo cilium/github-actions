@@ -17,7 +17,7 @@ package github
 import (
 	"context"
 
-	gh "github.com/google/go-github/v37/github"
+	gh "github.com/google/go-github/v38/github"
 )
 
 // ParseGHLabels parses the github labels into a map of labels (a set)

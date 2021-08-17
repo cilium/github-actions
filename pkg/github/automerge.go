@@ -20,7 +20,7 @@ import (
 	"strings"
 	"time"
 
-	gh "github.com/google/go-github/v37/github"
+	gh "github.com/google/go-github/v38/github"
 )
 
 type AutoMerge struct {
@@ -52,7 +52,7 @@ func (c *Client) AutoMerge(
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	commit, _, err := c.GHCli.Repositories.GetCommit(ctx, owner, repoName, head.GetSHA())
+	commit, _, err := c.GHCli.Repositories.GetCommit(ctx, owner, repoName, head.GetSHA(), &gh.ListOptions{})
 	if err != nil {
 		return err
 	}
