@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 	"net/url"
-	"path"
 	"regexp"
 	"strconv"
 	"strings"
@@ -198,7 +197,7 @@ func (jc *JenkinsClient) GetJobFailure(ctx context.Context, jobName string, buil
 	//  suite. Right now all artifacts are stored for all failures.
 	var artifacts []string
 	for _, artifact := range build.GetArtifacts() {
-		artifacts = append(artifacts, jc.Server+path.Join(artifact.Path, artifact.FileName))
+		artifacts = append(artifacts, jc.Server+artifact.Path)
 	}
 
 	var prFailures []BuildFailure
