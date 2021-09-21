@@ -19,7 +19,7 @@ import (
 	"regexp"
 
 	"github.com/cilium/github-actions/pkg/progress"
-	gh "github.com/google/go-github/v38/github"
+	gh "github.com/google/go-github/v39/github"
 )
 
 // GetPRsFailures returns a map of 'open' non-draft PRs Numbers that maps to
