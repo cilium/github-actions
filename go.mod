@@ -7,7 +7,7 @@ require (
 	github.com/google/go-github/v39 v39.1.0
 	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79
 	github.com/palantir/go-baseapp v0.3.0
-	github.com/palantir/go-githubapp v0.9.2
+	github.com/palantir/go-githubapp v0.9.3
 	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.25.0
 	github.com/sergi/go-diff v1.2.0
@@ -20,17 +20,16 @@ require (
 
 require (
 	github.com/bluekeyes/hatpear v0.1.1 // indirect
-	github.com/bradleyfalzon/ghinstallation/v2 v2.0.2 // indirect
+	github.com/bradleyfalzon/ghinstallation/v2 v2.0.3 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/dgrijalva/jwt-go/v4 v4.0.0-preview1 // indirect
+	github.com/golang-jwt/jwt/v4 v4.0.0 // indirect
 	github.com/golang/protobuf v1.4.2 // indirect
-	github.com/google/go-github/v38 v38.1.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
 	github.com/rs/xid v1.3.0 // indirect
-	github.com/shurcooL/githubv4 v0.0.0-20210725200734-83ba7b4c9228 // indirect
+	github.com/shurcooL/githubv4 v0.0.0-20210922025249-6831e00d857f // indirect
 	github.com/shurcooL/graphql v0.0.0-20181231061246-d48a9a75455f // indirect
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5 // indirect
 	golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4 // indirect
