@@ -35,7 +35,7 @@ const (
 		ghIssueDescription + "\n" +
 		"</details>"
 
-	ghPRCommentFail = "Job '{{.JobName}}' failed and has not been observed before, so may be related to your PR:\n" +
+	ghPRCommentFail = "Job '{{.JobName}}' failed:\n" +
 		"<details><summary>Click to show.</summary>\n\n" +
 		testNameHuman + "\n" +
 		testNameMLH + "\n" +
@@ -48,8 +48,8 @@ const (
 		"```\n" +
 		"\n" +
 		"</details>\n\n" +
-		"If it is a flake, comment `/mlh new-flake {{.JobName}}` so I can create " +
-		"a new GitHub issue to track it."
+		"If it is a flake and a GitHub issue doesn't already exist to track it, comment " +
+		"`/mlh new-flake {{.JobName}}` so I can create one."
 
 	ghPRCommentKnownFlakes = "Job '{{.JobName}}' hit: {{range $key, $value := .Issues}} #{{$key}} ({{$value}}% similarity) {{end}}\n"
 
