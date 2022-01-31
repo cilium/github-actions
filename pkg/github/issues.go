@@ -22,7 +22,7 @@ import (
 
 	"github.com/cilium/github-actions/pkg/jenkins"
 	"github.com/cilium/github-actions/pkg/progress"
-	gh "github.com/google/go-github/v39/github"
+	gh "github.com/google/go-github/v40/github"
 )
 
 const (
