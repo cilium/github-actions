@@ -1,4 +1,4 @@
-// Copyright 2019-2021 Authors of Cilium
+// Copyright 2019-2022 Authors of Cilium
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -46,19 +46,6 @@ func (c *Client) HandlePRE(cfg PRBlockerConfig, pre *gh.PullRequestEvent) error 
 		"action":    action,
 		"pr-number": prNumber,
 	}).Msg("Action triggered from PR")
-
-	// Assign individual reviewers to list of assignees
-	if action == "review_requested" {
-		users := pre.PullRequest.RequestedReviewers
-		err := c.Assign(context.TODO(), owner, repoName, prNumber, users)
-		if err != nil {
-			c.log.Info().Fields(map[string]interface{}{
-				"error":     err,
-				"pr-number": prNumber,
-			}).Msg("Unable to add assignees to PR")
-			return err
-		}
-	}
 
 	c.prLabels = ParseGHLabels(pr.Labels)
 
@@ -175,23 +162,6 @@ func (c *Client) HandlePRRE(cfg PRBlockerConfig, pre *gh.PullRequestReviewEvent)
 	}).Msg("Action triggered from PR")
 
 	c.prLabels = ParseGHLabels(pr.Labels)
-
-	// Unassign reviewer on approval
-	if pre.Review != nil {
-		if strings.ToLower(pre.Review.GetState()) == "approved" {
-			users := []*gh.User{
-				pre.Review.GetUser(),
-			}
-			err := c.Unassign(context.TODO(), owner, repoName, prNumber, users)
-			if err != nil {
-				c.log.Info().Fields(map[string]interface{}{
-					"error":     err,
-					"pr-number": prNumber,
-				}).Msg("Unable to remove assignees from PR")
-				return err
-			}
-		}
-	}
 
 	// if len(cfg.AutoMerge.Label) != 0 {
 	if true {
