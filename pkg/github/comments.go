@@ -20,7 +20,7 @@ import (
 	"regexp"
 
 	"github.com/cilium/github-actions/pkg/jenkins"
-	gh "github.com/google/go-github/v39/github"
+	gh "github.com/google/go-github/v40/github"
 )
 
 type MLHCommand string

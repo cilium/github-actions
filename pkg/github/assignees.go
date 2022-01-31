@@ -17,7 +17,7 @@ package github
 import (
 	"context"
 
-	gh "github.com/google/go-github/v39/github"
+	gh "github.com/google/go-github/v40/github"
 )
 
 type assignHandler func(ctx context.Context, owner, repo string, number int, assignees []string) (*gh.Issue, *gh.Response, error)
