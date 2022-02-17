@@ -73,10 +73,6 @@ BasicAuthTransport.
 
 GitHub Apps authentication can be provided by the
 https://github.com/bradleyfalzon/ghinstallation package.
-It supports both authentication as an installation, using an installation access token,
-and as an app, using a JWT.
-
-To authenticate as an installation:
 
 	import "github.com/bradleyfalzon/ghinstallation"
 
@@ -89,23 +85,6 @@ To authenticate as an installation:
 
 		// Use installation transport with client
 		client := github.NewClient(&http.Client{Transport: itr})
-
-		// Use client...
-	}
-
-To authenticate as an app, using a JWT:
-
-	import "github.com/bradleyfalzon/ghinstallation"
-
-	func main() {
-		// Wrap the shared transport for use with the application ID 1.
-		atr, err := ghinstallation.NewAppsTransportKeyFromFile(http.DefaultTransport, 1, "2016-10-19.private-key.pem")
-		if err != nil {
-			// Handle error.
-		}
-
-		// Use app transport with client
-		client := github.NewClient(&http.Client{Transport: atr})
 
 		// Use client...
 	}

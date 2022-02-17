@@ -10,18 +10,18 @@ github.com/bradleyfalzon/ghinstallation/v2
 # github.com/davecgh/go-spew v1.1.1
 ## explicit
 github.com/davecgh/go-spew/spew
-# github.com/golang-jwt/jwt/v4 v4.0.0
+# github.com/golang-jwt/jwt/v4 v4.1.0
 ## explicit; go 1.15
 github.com/golang-jwt/jwt/v4
 # github.com/golang/protobuf v1.4.2
 ## explicit; go 1.9
 github.com/golang/protobuf/proto
-# github.com/google/go-github/v39 v39.2.0
+# github.com/google/go-github/v39 v39.0.0
 ## explicit; go 1.16
 github.com/google/go-github/v39/github
-# github.com/google/go-github/v40 v40.0.0
+# github.com/google/go-github/v41 v41.0.0
 ## explicit; go 1.16
-github.com/google/go-github/v40/github
+github.com/google/go-github/v41/github
 # github.com/google/go-querystring v1.1.0
 ## explicit; go 1.10
 github.com/google/go-querystring/query
@@ -32,11 +32,11 @@ github.com/gregjones/httpcache
 ## explicit; go 1.12
 github.com/hashicorp/golang-lru
 github.com/hashicorp/golang-lru/simplelru
-# github.com/palantir/go-baseapp v0.3.0
+# github.com/palantir/go-baseapp v0.3.1
 ## explicit; go 1.13
 github.com/palantir/go-baseapp/baseapp
 github.com/palantir/go-baseapp/pkg/errfmt
-# github.com/palantir/go-githubapp v0.10.0
+# github.com/palantir/go-githubapp v0.11.0
 ## explicit; go 1.16
 github.com/palantir/go-githubapp/githubapp
 # github.com/pkg/errors v0.9.1
@@ -51,7 +51,7 @@ github.com/rcrowley/go-metrics
 # github.com/rs/xid v1.3.0
 ## explicit; go 1.12
 github.com/rs/xid
-# github.com/rs/zerolog v1.26.0
+# github.com/rs/zerolog v1.26.1
 ## explicit; go 1.15
 github.com/rs/zerolog
 github.com/rs/zerolog/hlog
@@ -62,7 +62,7 @@ github.com/rs/zerolog/log
 # github.com/sergi/go-diff v1.2.0
 ## explicit; go 1.12
 github.com/sergi/go-diff/diffmatchpatch
-# github.com/shurcooL/githubv4 v0.0.0-20210922025249-6831e00d857f
+# github.com/shurcooL/githubv4 v0.0.0-20220106005112-0707a5a90543
 ## explicit
 github.com/shurcooL/githubv4
 # github.com/shurcooL/graphql v0.0.0-20181231061246-d48a9a75455f
@@ -79,7 +79,7 @@ goji.io
 goji.io/internal
 goji.io/pat
 goji.io/pattern
-# golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
+# golang.org/x/crypto v0.0.0-20211215165025-cf75a172585e
 ## explicit; go 1.17
 golang.org/x/crypto/cast5
 golang.org/x/crypto/openpgp
@@ -88,13 +88,13 @@ golang.org/x/crypto/openpgp/elgamal
 golang.org/x/crypto/openpgp/errors
 golang.org/x/crypto/openpgp/packet
 golang.org/x/crypto/openpgp/s2k
-# golang.org/x/net v0.0.0-20210805182204-aaa1db679c0d
+# golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2
 ## explicit; go 1.17
 golang.org/x/net/context
 golang.org/x/net/context/ctxhttp
 golang.org/x/net/html
 golang.org/x/net/html/atom
-# golang.org/x/oauth2 v0.0.0-20210819190943-2bc19b11175f
+# golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8
 ## explicit; go 1.11
 golang.org/x/oauth2
 golang.org/x/oauth2/internal
@@ -141,6 +141,6 @@ google.golang.org/protobuf/runtime/protoimpl
 # gopkg.in/yaml.v2 v2.4.0
 ## explicit; go 1.15
 gopkg.in/yaml.v2
-# gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
+# gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 ## explicit
 gopkg.in/yaml.v3

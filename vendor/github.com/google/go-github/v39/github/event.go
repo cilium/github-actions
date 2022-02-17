@@ -30,8 +30,6 @@ func (e Event) String() string {
 // a value of the corresponding struct type will be returned.
 func (e *Event) ParsePayload() (payload interface{}, err error) {
 	switch *e.Type {
-	case "BranchProtectionRuleEvent":
-		payload = &BranchProtectionRuleEvent{}
 	case "CheckRunEvent":
 		payload = &CheckRunEvent{}
 	case "CheckSuiteEvent":

@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"github.com/cilium/github-actions/pkg/jenkins"
-	gh "github.com/google/go-github/v40/github"
+	gh "github.com/google/go-github/v41/github"
 	"github.com/rs/zerolog"
 	"golang.org/x/oauth2"
 )

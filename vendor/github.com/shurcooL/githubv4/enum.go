@@ -205,6 +205,18 @@ const (
 	DiscussionOrderFieldUpdatedAt DiscussionOrderField = "UPDATED_AT" // Order discussions by most recent modification time.
 )
 
+// DismissReason represents the possible reasons that a Dependabot alert was dismissed.
+type DismissReason string
+
+// The possible reasons that a Dependabot alert was dismissed.
+const (
+	DismissReasonFixStarted    DismissReason = "FIX_STARTED"    // A fix has already been started.
+	DismissReasonNoBandwidth   DismissReason = "NO_BANDWIDTH"   // No bandwidth to fix this.
+	DismissReasonTolerableRisk DismissReason = "TOLERABLE_RISK" // Risk is tolerable to this project.
+	DismissReasonInaccurate    DismissReason = "INACCURATE"     // This alert is inaccurate or incorrect.
+	DismissReasonNotUsed       DismissReason = "NOT_USED"       // Vulnerable code is not actually used.
+)
+
 // EnterpriseAdministratorInvitationOrderField represents properties by which enterprise administrator invitation connections can be ordered.
 type EnterpriseAdministratorInvitationOrderField string
 
@@ -494,6 +506,7 @@ const (
 	IssueTimelineItemsItemTypeCommentDeletedEvent        IssueTimelineItemsItemType = "COMMENT_DELETED_EVENT"          // Represents a 'comment_deleted' event on a given issue or pull request.
 	IssueTimelineItemsItemTypeConnectedEvent             IssueTimelineItemsItemType = "CONNECTED_EVENT"                // Represents a 'connected' event on a given issue or pull request.
 	IssueTimelineItemsItemTypeConvertedNoteToIssueEvent  IssueTimelineItemsItemType = "CONVERTED_NOTE_TO_ISSUE_EVENT"  // Represents a 'converted_note_to_issue' event on a given issue or pull request.
+	IssueTimelineItemsItemTypeConvertedToDiscussionEvent IssueTimelineItemsItemType = "CONVERTED_TO_DISCUSSION_EVENT"  // Represents a 'converted_to_discussion' event on a given issue.
 	IssueTimelineItemsItemTypeDemilestonedEvent          IssueTimelineItemsItemType = "DEMILESTONED_EVENT"             // Represents a 'demilestoned' event on a given issue or pull request.
 	IssueTimelineItemsItemTypeDisconnectedEvent          IssueTimelineItemsItemType = "DISCONNECTED_EVENT"             // Represents a 'disconnected' event on a given issue or pull request.
 	IssueTimelineItemsItemTypeLabeledEvent               IssueTimelineItemsItemType = "LABELED_EVENT"                  // Represents a 'labeled' event on a given issue or pull request.
@@ -585,6 +598,14 @@ const (
 	NotificationRestrictionSettingValueDisabled NotificationRestrictionSettingValue = "DISABLED" // The setting is disabled for the owner.
 )
 
+// OIDCProviderType represents the OIDC identity provider type.
+type OIDCProviderType string
+
+// The OIDC identity provider type.
+const (
+	OIDCProviderTypeAad OIDCProviderType = "AAD" // Azure Active Directory.
+)
+
 // OauthApplicationCreateAuditEntryState represents the state of an OAuth Application when it was created.
 type OauthApplicationCreateAuditEntryState string
 
@@ -637,6 +658,14 @@ const (
 	OrgCreateAuditEntryBillingPlanBusinessPlus  OrgCreateAuditEntryBillingPlan = "BUSINESS_PLUS"   // Enterprise Cloud Plan.
 	OrgCreateAuditEntryBillingPlanUnlimited     OrgCreateAuditEntryBillingPlan = "UNLIMITED"       // Legacy Unlimited Plan.
 	OrgCreateAuditEntryBillingPlanTieredPerSeat OrgCreateAuditEntryBillingPlan = "TIERED_PER_SEAT" // Tiered Per Seat Plan.
+)
+
+// OrgEnterpriseOwnerOrderField represents properties by which enterprise owners can be ordered.
+type OrgEnterpriseOwnerOrderField string
+
+// Properties by which enterprise owners can be ordered.
+const (
+	OrgEnterpriseOwnerOrderFieldLogin OrgEnterpriseOwnerOrderField = "LOGIN" // Order enterprise owners by login.
 )
 
 // OrgRemoveBillingManagerAuditEntryReason represents the reason a billing manager was removed from an Organization.
@@ -883,6 +912,17 @@ const (
 	ProjectColumnPurposeDone       ProjectColumnPurpose = "DONE"        // The column contains cards which are complete.
 )
 
+// ProjectNextOrderField represents properties by which the return project can be ordered.
+type ProjectNextOrderField string
+
+// Properties by which the return project can be ordered.
+const (
+	ProjectNextOrderFieldTitle     ProjectNextOrderField = "TITLE"      // The project's title.
+	ProjectNextOrderFieldNumber    ProjectNextOrderField = "NUMBER"     // The project's number.
+	ProjectNextOrderFieldUpdatedAt ProjectNextOrderField = "UPDATED_AT" // The project's date and time of update.
+	ProjectNextOrderFieldCreatedAt ProjectNextOrderField = "CREATED_AT" // The project's date and time of creation.
+)
+
 // ProjectOrderField represents properties by which project connections can be ordered.
 type ProjectOrderField string
 
@@ -1022,6 +1062,7 @@ const (
 	PullRequestTimelineItemsItemTypeCommentDeletedEvent               PullRequestTimelineItemsItemType = "COMMENT_DELETED_EVENT"                 // Represents a 'comment_deleted' event on a given issue or pull request.
 	PullRequestTimelineItemsItemTypeConnectedEvent                    PullRequestTimelineItemsItemType = "CONNECTED_EVENT"                       // Represents a 'connected' event on a given issue or pull request.
 	PullRequestTimelineItemsItemTypeConvertedNoteToIssueEvent         PullRequestTimelineItemsItemType = "CONVERTED_NOTE_TO_ISSUE_EVENT"         // Represents a 'converted_note_to_issue' event on a given issue or pull request.
+	PullRequestTimelineItemsItemTypeConvertedToDiscussionEvent        PullRequestTimelineItemsItemType = "CONVERTED_TO_DISCUSSION_EVENT"         // Represents a 'converted_to_discussion' event on a given issue.
 	PullRequestTimelineItemsItemTypeDemilestonedEvent                 PullRequestTimelineItemsItemType = "DEMILESTONED_EVENT"                    // Represents a 'demilestoned' event on a given issue or pull request.
 	PullRequestTimelineItemsItemTypeDisconnectedEvent                 PullRequestTimelineItemsItemType = "DISCONNECTED_EVENT"                    // Represents a 'disconnected' event on a given issue or pull request.
 	PullRequestTimelineItemsItemTypeLabeledEvent                      PullRequestTimelineItemsItemType = "LABELED_EVENT"                         // Represents a 'labeled' event on a given issue or pull request.
@@ -1309,6 +1350,16 @@ const (
 	RequestableCheckStatusStatePending    RequestableCheckStatusState = "PENDING"     // The check suite or run is in pending state.
 )
 
+// RoleInOrganization represents possible roles a user may have in relation to an organization.
+type RoleInOrganization string
+
+// Possible roles a user may have in relation to an organization.
+const (
+	RoleInOrganizationOwner        RoleInOrganization = "OWNER"         // A user with full administrative access to the organization.
+	RoleInOrganizationDirectMember RoleInOrganization = "DIRECT_MEMBER" // A user who is a direct member of the organization.
+	RoleInOrganizationUnaffiliated RoleInOrganization = "UNAFFILIATED"  // A user who is unaffiliated with the organization.
+)
+
 // SamlDigestAlgorithm represents the possible digest algorithms used to sign SAML requests for an identity provider.
 type SamlDigestAlgorithm string
 
@@ -1362,6 +1413,7 @@ const (
 	SecurityAdvisoryEcosystemNuget    SecurityAdvisoryEcosystem = "NUGET"    // .NET packages hosted at the NuGet Gallery.
 	SecurityAdvisoryEcosystemPip      SecurityAdvisoryEcosystem = "PIP"      // Python packages hosted at PyPI.org.
 	SecurityAdvisoryEcosystemRubygems SecurityAdvisoryEcosystem = "RUBYGEMS" // Ruby gems hosted at RubyGems.org.
+	SecurityAdvisoryEcosystemRust     SecurityAdvisoryEcosystem = "RUST"     // Rust crates.
 )
 
 // SecurityAdvisoryIdentifierType represents identifier formats available for advisories.
