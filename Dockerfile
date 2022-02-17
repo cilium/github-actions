@@ -1,4 +1,4 @@
-FROM docker.io/library/golang:1.17.1@sha256:285cf0cb73ab995caee61b900b2be123cd198f3541ce318c549ea5ff9832bdf0 as builder
+FROM docker.io/library/golang:1.17.7@sha256:1a35cc2c5338409227c7293add327ebe42e1ee5465049f6c57c829588e3f8a39 as builder
 LABEL maintainer="maintainer@cilium.io"
 ADD . /go/src/github.com/cilium/github-actions
 WORKDIR /go/src/github.com/cilium/github-actions
