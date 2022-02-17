@@ -38,5 +38,5 @@ variable "service_account_name" {
 variable "container_image" {
   description = "The image name to deploy"
   type        = string
-  default     = "quay.io/cilium/github-actions:v1.1.3"
+  default     = "quay.io/cilium/github-actions:v1.1.4"
 }
