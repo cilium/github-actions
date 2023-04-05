@@ -3,8 +3,8 @@ VERSION=latest
 endif
 
 all:
-	docker build -t cilium/github-actions:${VERSION} .
-	@echo -e "\nTo push to the registry:\ndocker push cilium/github-actions:${VERSION}"
+	docker buildx build -t quay.io/cilium/github-actions:${VERSION} . -f Dockerfile -o type=docker
+	@echo -e "\nTo push to the registry:\ndocker push quay.io/cilium/github-actions:${VERSION}"
 
 .PHONY: all github-actions local
 

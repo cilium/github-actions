@@ -23,7 +23,7 @@ import (
 	"time"
 
 	"github.com/cilium/github-actions/pkg/jenkins"
-	gh "github.com/google/go-github/v47/github"
+	gh "github.com/google/go-github/v50/github"
 )
 
 type PRBlockerConfig struct {

@@ -20,7 +20,7 @@ import (
 	"regexp"
 	"time"
 
-	gh "github.com/google/go-github/v47/github"
+	gh "github.com/google/go-github/v50/github"
 )
 
 type PRLabelConfig struct {

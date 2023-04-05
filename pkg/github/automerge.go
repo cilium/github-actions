@@ -20,7 +20,7 @@ import (
 	"strings"
 	"time"
 
-	gh "github.com/google/go-github/v47/github"
+	gh "github.com/google/go-github/v50/github"
 )
 
 type AutoMerge struct {
@@ -92,7 +92,7 @@ func (c *Client) AutoMerge(
 
 		switch strings.ToLower(userReview.GetState()) {
 		case "changes_requested":
-			if userReview.SubmittedAt.Before(commitDate) {
+			if userReview.SubmittedAt.Before(commitDate.Time) {
 				requestedReviews = append(
 					requestedReviews,
 					userReview.GetUser().GetLogin(),
@@ -305,7 +305,7 @@ func addReview(recentReviewsByUser map[string]*gh.PullRequestReview, review *gh.
 	//  APPROVE overwrites any previous review
 	//  COMMENTED is only kept if no other APPROVE nor CHANGES_REQUESTED
 	//  have been made
-	if review.GetSubmittedAt().After(userReview.GetSubmittedAt()) {
+	if review.GetSubmittedAt().After(userReview.GetSubmittedAt().Time) {
 		switch strings.ToLower(review.GetState()) {
 		case "changes_requested", "approved":
 			recentReviewsByUser[userName] = review

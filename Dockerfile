@@ -1,11 +1,11 @@
-FROM docker.io/library/golang:1.19.3@sha256:dc76ef03e54c34a00dcdca81e55c242d24b34d231637776c4bb5c1a8e8514253 as builder
+FROM docker.io/library/golang:1.20.3@sha256:23050c2510e0a920d66b48afdc40043bcfe2e25d044a2d7b33475632d83ab6c7 as builder
 LABEL maintainer="maintainer@cilium.io"
 ADD . /go/src/github.com/cilium/github-actions
 WORKDIR /go/src/github.com/cilium/github-actions
 RUN make github-actions
 RUN strip github-actions
 
-FROM docker.io/library/alpine:3.14.0@sha256:adab3844f497ab9171f070d4cae4114b5aec565ac772e2f2579405b78be67c96 as certs
+FROM docker.io/library/alpine:3.17.3@sha256:124c7d2707904eea7431fffe91522a01e5a861a624ee31d03372cc1d138a3126 as certs
 RUN apk --update add ca-certificates
 
 FROM scratch
