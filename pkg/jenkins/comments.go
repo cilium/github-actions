@@ -50,7 +50,8 @@ const (
 		"</details>\n\n" +
 		"Jenkins URL: {{.URL}}\n\n" +
 		"If it is a flake and a GitHub issue doesn't already exist to track it, comment " +
-		"`/mlh new-flake {{.JobName}}` so I can create one."
+		"`/mlh new-flake {{.JobName}}` so I can create one.\n\n" +
+		"Then please upload the Jenkins artifacts to that issue."
 
 	ghPRCommentKnownFlakes = "Job '{{.JobName}}' hit: {{range $key, $value := .Issues}} #{{$key}} ({{$value}}% similarity) {{end}}\n"
 
