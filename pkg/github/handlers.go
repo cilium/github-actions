@@ -36,7 +36,7 @@ type PRBlockerConfig struct {
 	FlakeTracker                 *FlakeConfig                  `yaml:"flake-tracker,omitempty"`
 }
 
-func (c *Client) HandlePRE(cfg PRBlockerConfig, pre *gh.PullRequestEvent) error {
+func (c *Client) HandlePullRequestEvent(cfg PRBlockerConfig, pre *gh.PullRequestEvent) error {
 	pr := pre.GetPullRequest()
 	owner := pr.Base.Repo.GetOwner().GetLogin()
 	repoName := *pr.Base.Repo.Name
@@ -150,7 +150,7 @@ func (c *Client) HandlePRE(cfg PRBlockerConfig, pre *gh.PullRequestEvent) error 
 	return nil
 }
 
-func (c *Client) HandlePRRE(cfg PRBlockerConfig, pre *gh.PullRequestReviewEvent) error {
+func (c *Client) HandlePullRequestReviewEvent(cfg PRBlockerConfig, pre *gh.PullRequestReviewEvent) error {
 	pr := pre.GetPullRequest()
 	owner := pr.Base.Repo.GetOwner().GetLogin()
 	repoName := *pr.Base.Repo.Name
@@ -177,7 +177,7 @@ func (c *Client) HandlePRRE(cfg PRBlockerConfig, pre *gh.PullRequestReviewEvent)
 	return nil
 }
 
-func (c *Client) HandleSE(cfg PRBlockerConfig, se *gh.StatusEvent) error {
+func (c *Client) HandleStatusEvent(cfg PRBlockerConfig, se *gh.StatusEvent) error {
 	owner := se.Repo.GetOwner().GetLogin()
 	repoName := *se.Repo.Name
 	nextPage := 0

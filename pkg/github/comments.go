@@ -73,7 +73,7 @@ func IsMLHCommand(s string) MLHCommand {
 	}
 }
 
-func (c *Client) HandleIC(ctx context.Context, cfg *FlakeConfig, jobName string, pr *gh.PullRequest, event *gh.IssueCommentEvent) error {
+func (c *Client) HandleIssueCommentEvent(ctx context.Context, cfg *FlakeConfig, jobName string, pr *gh.PullRequest, event *gh.IssueCommentEvent) error {
 	prNumber := event.GetIssue().GetNumber()
 	prURLFails, err := c.GetPRFailure(ctx, pr)
 	if err != nil {
