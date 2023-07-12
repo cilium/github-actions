@@ -30,7 +30,6 @@ type Client struct {
 	log        *zerolog.Logger
 	orgName    string
 	repoName   string
-	prLabels   map[string]struct{}
 	clientMode bool
 }
 

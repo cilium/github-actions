@@ -47,12 +47,12 @@ func (c *Client) HandlePullRequestEvent(cfg PRBlockerConfig, pre *gh.PullRequest
 		"pr-number": prNumber,
 	}).Msg("Action triggered from PR")
 
-	c.prLabels = ParseGHLabels(pr.Labels)
+	prLabels := parseGHLabels(pr.Labels)
 
 	// Autolabel PRs as soon they are created
 	if len(cfg.AutoLabel) != 0 { // We only auto-label PRs if when they are open / reopen
 		if action == "opened" || action == "reopened" {
-			err := c.AutoLabel(cfg.AutoLabel, owner, repoName, prNumber)
+			err := c.AutoLabel(cfg.AutoLabel, owner, repoName, prNumber, prLabels)
 			if err != nil {
 				return err
 			}
@@ -77,7 +77,7 @@ func (c *Client) HandlePullRequestEvent(cfg PRBlockerConfig, pre *gh.PullRequest
 		if pr.GetState() != "closed" {
 			switch action {
 			case "labeled", "unlabeled", "synchronize", "opened", "reopened":
-				blockPR, blockReasons, err := c.BlockPRWith(cfg.BlockPRWith, owner, repoName, prNumber)
+				blockPR, blockReasons, err := c.BlockPRWith(cfg.BlockPRWith, owner, repoName, prNumber, prLabels)
 				if err != nil {
 					return err
 				}
@@ -109,7 +109,7 @@ func (c *Client) HandlePullRequestEvent(cfg PRBlockerConfig, pre *gh.PullRequest
 	if len(cfg.MoveToProjectsForLabelsXORed) != 0 {
 		switch action {
 		case "labeled", "unlabeled":
-			err := c.SyncPRProjects(cfg.MoveToProjectsForLabelsXORed, owner, repoName, pr.GetID(), prNumber)
+			err := c.SyncPRProjects(cfg.MoveToProjectsForLabelsXORed, owner, repoName, pr.GetID(), prNumber, prLabels)
 			if err != nil {
 				return err
 			}
@@ -122,13 +122,13 @@ func (c *Client) HandlePullRequestEvent(cfg PRBlockerConfig, pre *gh.PullRequest
 		case "synchronize":
 			// Remove ready-to-merge label if it is present and the developer
 			// synchronized the PR
-			if _, ok := c.prLabels[cfg.AutoMerge.Label]; ok {
+			if _, ok := prLabels[cfg.AutoMerge.Label]; ok {
 				_, err := c.GHCli.Issues.RemoveLabelForIssue(
 					context.Background(), owner, repoName, prNumber, cfg.AutoMerge.Label)
 				if err != nil {
 					return err
 				}
-				delete(c.prLabels, cfg.AutoMerge.Label)
+				delete(prLabels, cfg.AutoMerge.Label)
 			}
 		}
 		switch action {
@@ -139,7 +139,7 @@ func (c *Client) HandlePullRequestEvent(cfg PRBlockerConfig, pre *gh.PullRequest
 				return nil
 			}
 			if !pr.GetDraft() {
-				err := c.AutoMerge(cfg.AutoMerge, owner, repoName, pr.GetBase(), pr.GetHead(), prNumber, nil)
+				err := c.AutoMerge(cfg.AutoMerge, owner, repoName, pr.GetBase(), pr.GetHead(), prNumber, prLabels, nil)
 				if err != nil {
 					return err
 				}
@@ -161,14 +161,14 @@ func (c *Client) HandlePullRequestReviewEvent(cfg PRBlockerConfig, pre *gh.PullR
 		"pr-number": prNumber,
 	}).Msg("Action triggered from PR")
 
-	c.prLabels = ParseGHLabels(pr.Labels)
+	prLabels := parseGHLabels(pr.Labels)
 
 	// if len(cfg.AutoMerge.Label) != 0 {
 	if true {
 		cfg.AutoMerge.Label = "ready-to-merge"
 		cfg.AutoMerge.MinimalApprovals = 1
 		if !pr.GetDraft() {
-			err := c.AutoMerge(cfg.AutoMerge, owner, repoName, pr.GetBase(), pr.GetHead(), prNumber, pre.Review)
+			err := c.AutoMerge(cfg.AutoMerge, owner, repoName, pr.GetBase(), pr.GetHead(), prNumber, prLabels, pre.Review)
 			if err != nil {
 				return err
 			}
@@ -254,7 +254,10 @@ func (c *Client) HandleStatusEvent(cfg PRBlockerConfig, se *gh.StatusEvent) erro
 				c.Log().Info().Fields(map[string]interface{}{"pr-number": pr.GetNumber()}).Msgf("PR is in draft")
 				continue
 			}
-			err = c.AutoMerge(cfg.AutoMerge, owner, repoName, pr.GetBase(), pr.GetHead(), pr.GetNumber(), nil)
+
+			prLabels := parseGHLabels(pr.Labels)
+
+			err = c.AutoMerge(cfg.AutoMerge, owner, repoName, pr.GetBase(), pr.GetHead(), pr.GetNumber(), prLabels, nil)
 			if err != nil {
 				return err
 			}

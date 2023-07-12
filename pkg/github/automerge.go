@@ -34,6 +34,7 @@ func (c *Client) AutoMerge(
 	base,
 	head *gh.PullRequestBranch,
 	prNumber int,
+	prLabels PRLabels,
 	review *gh.PullRequestReview,
 ) error {
 
@@ -153,14 +154,14 @@ func (c *Client) AutoMerge(
 		}).Msg("Users have requested changes, the author hasn't synced the PR or the PR does not have the minimal approvals")
 		// Only review the label if we know that exists or that we are handling
 		// a PR review event (review != nil).
-		if _, ok := c.prLabels[cfg.Label]; ok || review != nil {
+		if _, ok := prLabels[cfg.Label]; ok || review != nil {
 			c.log.Info().Msg("Removing ready-to-merge label")
 			_, err := c.GHCli.Issues.RemoveLabelForIssue(
 				context.Background(), owner, repoName, prNumber, cfg.Label)
 			if err != nil && !IsNotFound(err) {
 				return err
 			}
-			delete(c.prLabels, cfg.Label)
+			delete(prLabels, cfg.Label)
 		}
 		return nil
 	}
@@ -190,7 +191,7 @@ func (c *Client) AutoMerge(
 		"total-approvals":         approvals,
 		"pr-number":               prNumber,
 	}).Msg("Set 'ready-to-merge'")
-	c.prLabels[cfg.Label] = struct{}{}
+	prLabels[cfg.Label] = struct{}{}
 
 	return nil
 }

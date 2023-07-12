@@ -20,8 +20,10 @@ import (
 	gh "github.com/google/go-github/v50/github"
 )
 
-// ParseGHLabels parses the github labels into a map of labels (a set)
-func ParseGHLabels(ghLabels []*gh.Label) map[string]struct{} {
+type PRLabels map[string]struct{}
+
+// parseGHLabels parses the github labels into a map of labels (a set)
+func parseGHLabels(ghLabels []*gh.Label) PRLabels {
 	lbls := make(map[string]struct{}, len(ghLabels))
 	for _, prLabel := range ghLabels {
 		lbls[prLabel.GetName()] = struct{}{}
@@ -30,7 +32,7 @@ func ParseGHLabels(ghLabels []*gh.Label) map[string]struct{} {
 }
 
 // subslice returns true if all elements of 's1' are keys of 's2'.
-func subslice(s1 []string, s2 map[string]struct{}) bool {
+func subslice(s1 []string, s2 PRLabels) bool {
 	if len(s1) > len(s2) {
 		return false
 	}
@@ -43,8 +45,8 @@ func subslice(s1 []string, s2 map[string]struct{}) bool {
 }
 
 // AutoLabel sets the labels automatically in a PR that is opened or reopened.
-func (c *Client) AutoLabel(labels []string, owner string, repoName string, prNumber int) error {
-	if subslice(labels, c.prLabels) {
+func (c *Client) AutoLabel(labels []string, owner string, repoName string, prNumber int, prLabels PRLabels) error {
+	if subslice(labels, prLabels) {
 		return nil
 	}
 
