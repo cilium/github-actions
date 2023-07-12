@@ -43,23 +43,23 @@ func (h *PRCommentHandler) Handle(ctx context.Context, eventType, deliveryID str
 	var err error
 	switch eventType {
 	case "status":
-		err = h.HandleSE(ctx, payload)
+		err = h.HandleStatusEvent(ctx, payload)
 	case "pull_request_review":
-		err = h.HandlePRRE(ctx, payload)
+		err = h.HandlePullRequestReviewEvent(ctx, payload)
 	case "pull_request":
-		err = h.HandlePRE(ctx, payload)
+		err = h.HandlePullRequestEvent(ctx, payload)
 	case "issue_comment":
-		err = h.HandleIC(ctx, payload)
+		err = h.HandleIssueCommentEvent(ctx, payload)
 	}
 	if err != nil {
 		logger.Err(err).Msg("Unable to handle event")
-		return fmt.Errorf("unable to handle PullRequestEvent: %s\n", err)
+		return fmt.Errorf("unable to handle event: %s\n", err)
 	}
 
 	return nil
 }
 
-func (h *PRCommentHandler) HandlePRE(ctx context.Context, payload []byte) error {
+func (h *PRCommentHandler) HandlePullRequestEvent(ctx context.Context, payload []byte) error {
 	var event gh.PullRequestEvent
 	if err := json.Unmarshal(payload, &event); err != nil {
 		return errors.Wrap(err, "failed to parse issue comment event payload")
@@ -90,10 +90,10 @@ func (h *PRCommentHandler) HandlePRE(ctx context.Context, payload []byte) error 
 		return fmt.Errorf("unable to unmarshal config %q file: %s\n", actionCfgPath, err)
 	}
 
-	return ghClient.HandlePRE(c, &event)
+	return ghClient.HandlePullRequestEvent(c, &event)
 }
 
-func (h *PRCommentHandler) HandleSE(ctx context.Context, payload []byte) error {
+func (h *PRCommentHandler) HandleStatusEvent(ctx context.Context, payload []byte) error {
 	var event gh.StatusEvent
 	if err := json.Unmarshal(payload, &event); err != nil {
 		return errors.Wrap(err, "failed to parse issue comment event payload")
@@ -124,10 +124,10 @@ func (h *PRCommentHandler) HandleSE(ctx context.Context, payload []byte) error {
 		return fmt.Errorf("unable to unmarshal config %q file: %s\n", actionCfgPath, err)
 	}
 
-	return ghClient.HandleSE(c, &event)
+	return ghClient.HandleStatusEvent(c, &event)
 }
 
-func (h *PRCommentHandler) HandlePRRE(ctx context.Context, payload []byte) error {
+func (h *PRCommentHandler) HandlePullRequestReviewEvent(ctx context.Context, payload []byte) error {
 	var event gh.PullRequestReviewEvent
 	if err := json.Unmarshal(payload, &event); err != nil {
 		return errors.Wrap(err, "failed to parse issue comment event payload")
@@ -158,10 +158,10 @@ func (h *PRCommentHandler) HandlePRRE(ctx context.Context, payload []byte) error
 		return fmt.Errorf("unable to unmarshal config %q file: %s\n", actionCfgPath, err)
 	}
 
-	return ghClient.HandlePRRE(c, &event)
+	return ghClient.HandlePullRequestReviewEvent(c, &event)
 }
 
-func (h *PRCommentHandler) HandleIC(ctx context.Context, payload []byte) error {
+func (h *PRCommentHandler) HandleIssueCommentEvent(ctx context.Context, payload []byte) error {
 	var event gh.IssueCommentEvent
 	if err := json.Unmarshal(payload, &event); err != nil {
 		return errors.Wrap(err, "failed to parse issue comment event payload")
@@ -231,5 +231,5 @@ func (h *PRCommentHandler) HandleIC(ctx context.Context, payload []byte) error {
 		return fmt.Errorf("unable to unmarshal config %q file: %s\n", actionCfgPath, err)
 	}
 
-	return ghClient.HandleIC(ctx, c.FlakeTracker, jobName, pr, &event)
+	return ghClient.HandleIssueCommentEvent(ctx, c.FlakeTracker, jobName, pr, &event)
 }
