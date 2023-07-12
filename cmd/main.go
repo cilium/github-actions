@@ -15,14 +15,11 @@
 package main
 
 import (
-	"errors"
-	"fmt"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
 
-	"github.com/cilium/github-actions/pkg/github"
 	"github.com/gregjones/httpcache"
 	"github.com/palantir/go-baseapp/baseapp"
 	"github.com/palantir/go-githubapp/githubapp"
@@ -90,20 +87,4 @@ func runServer() {
 	if err != nil {
 		panic(err)
 	}
-}
-
-func getActionsCfg(ghClient *github.Client, owner, repoName, ghSha string) (string, []byte, error) {
-	actionCfgPath := os.Getenv("CONFIG_PATHS")
-	configPaths := strings.Split(actionCfgPath, ",")
-	for _, configPath := range configPaths {
-		cfgFile, err := ghClient.GetConfigFile(owner, repoName, configPath, ghSha)
-		switch {
-		case github.IsNotFound(err) || github.IsNotFound(errors.Unwrap(err)):
-			continue
-		case err != nil:
-			return "", nil, fmt.Errorf("unable to get config %q file: %s %T\n", configPath, err, errors.Unwrap(err))
-		}
-		return configPath, cfgFile, nil
-	}
-	return "", nil, nil
 }

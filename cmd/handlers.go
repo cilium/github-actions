@@ -76,7 +76,7 @@ func (h *PRCommentHandler) HandlePullRequestEvent(ctx context.Context, payload [
 	ghClient := github.NewClientFromGHClient(installCli, owner, repoName, zerolog.Ctx(ctx))
 	ghSha := event.PullRequest.Base.GetSHA()
 
-	actionCfgPath, cfgFile, err := getActionsCfg(ghClient, owner, repoName, ghSha)
+	actionCfgPath, cfgFile, err := github.GetActionsCfg(ghClient, owner, repoName, ghSha)
 	if err != nil {
 		return err
 	}
@@ -110,7 +110,7 @@ func (h *PRCommentHandler) HandleStatusEvent(ctx context.Context, payload []byte
 	ghClient := github.NewClientFromGHClient(installCli, owner, repoName, zerolog.Ctx(ctx))
 	ghSha := event.GetSHA()
 
-	actionCfgPath, cfgFile, err := getActionsCfg(ghClient, owner, repoName, ghSha)
+	actionCfgPath, cfgFile, err := github.GetActionsCfg(ghClient, owner, repoName, ghSha)
 	if err != nil {
 		return err
 	}
@@ -144,7 +144,7 @@ func (h *PRCommentHandler) HandlePullRequestReviewEvent(ctx context.Context, pay
 	ghClient := github.NewClientFromGHClient(installCli, owner, repoName, zerolog.Ctx(ctx))
 	ghSha := event.PullRequest.Base.GetSHA()
 
-	actionCfgPath, cfgFile, err := getActionsCfg(ghClient, owner, repoName, ghSha)
+	actionCfgPath, cfgFile, err := github.GetActionsCfg(ghClient, owner, repoName, ghSha)
 	if err != nil {
 		return err
 	}
@@ -217,7 +217,7 @@ func (h *PRCommentHandler) HandleIssueCommentEvent(ctx context.Context, payload 
 
 	ghSha := pr.GetBase().GetSHA()
 
-	actionCfgPath, cfgFile, err := getActionsCfg(ghClient, owner, repoName, ghSha)
+	actionCfgPath, cfgFile, err := github.GetActionsCfg(ghClient, owner, repoName, ghSha)
 	if err != nil {
 		return err
 	}

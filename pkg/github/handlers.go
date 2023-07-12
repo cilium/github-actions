@@ -26,16 +26,6 @@ import (
 	gh "github.com/google/go-github/v50/github"
 )
 
-type PRBlockerConfig struct {
-	Project                      `yaml:",inline"`
-	MoveToProjectsForLabelsXORed map[string]map[string]Project `yaml:"move-to-projects-for-labels-xored,omitempty"`
-	RequireMsgsInCommit          []MsgInCommit                 `yaml:"require-msgs-in-commit,omitempty"`
-	AutoLabel                    []string                      `yaml:"auto-label,omitempty"`
-	BlockPRWith                  BlockPRWith                   `yaml:"block-pr-with,omitempty"`
-	AutoMerge                    AutoMerge                     `yaml:"auto-merge,omitempty"`
-	FlakeTracker                 *FlakeConfig                  `yaml:"flake-tracker,omitempty"`
-}
-
 func (c *Client) HandlePullRequestEvent(cfg PRBlockerConfig, pre *gh.PullRequestEvent) error {
 	pr := pre.GetPullRequest()
 	owner := pr.Base.Repo.GetOwner().GetLogin()

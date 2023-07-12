@@ -12,26 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package github
 
 import (
 	"io/ioutil"
 	"os"
 	"testing"
 
-	"github.com/cilium/github-actions/pkg/github"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v2"
 )
 
 func TestConfigParser(t *testing.T) {
 
-	expect := github.PRBlockerConfig{
-		Project: github.Project{
+	expect := PRBlockerConfig{
+		Project: Project{
 			ProjectName: "https://github.com/cilium/cilium/projects/80",
 			ColumnName:  "In progress",
 		},
-		MoveToProjectsForLabelsXORed: map[string]map[string]github.Project{
+		MoveToProjectsForLabelsXORed: map[string]map[string]Project{
 			"v1.6": {
 				"needs-backport/1.6": {
 					ProjectName: "https://github.com/cilium/cilium/projects/91",
@@ -61,7 +60,7 @@ func TestConfigParser(t *testing.T) {
 				},
 			},
 		},
-		RequireMsgsInCommit: []github.MsgInCommit{
+		RequireMsgsInCommit: []MsgInCommit{
 			{
 				Msg:    "Signed-off-by",
 				Helper: "https://docs.cilium.io/en/stable/contributing/contributing/#developer-s-certificate-of-origin",
@@ -73,8 +72,8 @@ func TestConfigParser(t *testing.T) {
 		AutoLabel: []string{
 			"pending-review",
 		},
-		BlockPRWith: github.BlockPRWith{
-			LabelsUnset: []github.PRLabelConfig{
+		BlockPRWith: BlockPRWith{
+			LabelsUnset: []PRLabelConfig{
 				{
 					RegexLabel: "release-note/.*",
 					Helper:     "Release note label not set, please set the appropriate release note.",
@@ -83,7 +82,7 @@ func TestConfigParser(t *testing.T) {
 					},
 				},
 			},
-			LabelsSet: []github.PRLabelConfig{
+			LabelsSet: []PRLabelConfig{
 				{
 					RegexLabel: "dont-merge/.*",
 					Helper:     "Blocking mergeability of PR as 'dont-merge/.*' labels are set",
@@ -92,7 +91,7 @@ func TestConfigParser(t *testing.T) {
 		},
 	}
 
-	file, err := os.Open("../test/config.yml")
+	file, err := os.Open("testdata/config.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -101,7 +100,7 @@ func TestConfigParser(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	var c github.PRBlockerConfig
+	var c PRBlockerConfig
 	err = yaml.Unmarshal(contents, &c)
 	assert.Equal(t, expect, c)
 }
