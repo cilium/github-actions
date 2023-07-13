@@ -33,7 +33,7 @@ func (c *Client) GetPRsFailures(ctx context.Context, base string) (map[int][]str
 			return nil, ctx.Err()
 		default:
 		}
-		prs, resp, err := c.GHCli.PullRequests.List(ctx, c.orgName, c.repoName, &gh.PullRequestListOptions{
+		prs, resp, err := c.GHClient.PullRequests.List(ctx, c.orgName, c.repoName, &gh.PullRequestListOptions{
 			State: "open",
 			Base:  base,
 			ListOptions: gh.ListOptions{
@@ -80,7 +80,7 @@ func (c *Client) GetPRFailure(ctx context.Context, pr *gh.PullRequest) ([]string
 
 // GetPRFailures gets the jenkins URL failures of the given PR number.
 func (c *Client) GetPRFailures(ctx context.Context, prNumber int) ([]string, error) {
-	pr, _, err := c.GHCli.PullRequests.Get(ctx, c.orgName, c.repoName, prNumber)
+	pr, _, err := c.GHClient.PullRequests.Get(ctx, c.orgName, c.repoName, prNumber)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +97,7 @@ func (c *Client) getPRTriggerComment(ctx context.Context, orgName, repo string, 
 			return nil, ctx.Err()
 		default:
 		}
-		comments, resp, err := c.GHCli.Issues.ListComments(ctx, orgName, repo, prNumber, &gh.IssueListCommentsOptions{
+		comments, resp, err := c.GHClient.Issues.ListComments(ctx, orgName, repo, prNumber, &gh.IssueListCommentsOptions{
 			ListOptions: gh.ListOptions{
 				Page: nextPage,
 			},
@@ -127,14 +127,14 @@ func (c *Client) getPRTriggerComment(ctx context.Context, orgName, repo string, 
 }
 
 func (c *Client) createComment(ctx context.Context, orgName, repo string, number int, body string) error {
-	_, _, err := c.GHCli.Issues.CreateComment(ctx, orgName, repo, number, &gh.IssueComment{
+	_, _, err := c.GHClient.Issues.CreateComment(ctx, orgName, repo, number, &gh.IssueComment{
 		Body: &body,
 	})
 	return err
 }
 
 func (c *Client) editComment(ctx context.Context, orgName, repo string, commentID int64, body string) error {
-	_, _, err := c.GHCli.Issues.EditComment(ctx, orgName, repo, commentID, &gh.IssueComment{
+	_, _, err := c.GHClient.Issues.EditComment(ctx, orgName, repo, commentID, &gh.IssueComment{
 		Body: &body,
 	})
 	return err

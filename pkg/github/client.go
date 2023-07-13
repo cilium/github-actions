@@ -26,7 +26,7 @@ import (
 )
 
 type Client struct {
-	GHCli      *gh.Client
+	GHClient   *gh.Client
 	log        *zerolog.Logger
 	orgName    string
 	repoName   string
@@ -35,7 +35,7 @@ type Client struct {
 
 func NewClient(ghToken string, orgName, repo string, logger *zerolog.Logger) *Client {
 	return &Client{
-		GHCli: gh.NewClient(
+		GHClient: gh.NewClient(
 			oauth2.NewClient(
 				context.Background(),
 				oauth2.StaticTokenSource(
@@ -52,9 +52,9 @@ func NewClient(ghToken string, orgName, repo string, logger *zerolog.Logger) *Cl
 	}
 }
 
-func NewClientFromGHClient(ghCli *gh.Client, orgName, repo string, logger *zerolog.Logger) *Client {
+func NewClientFromGHClient(ghClient *gh.Client, orgName, repo string, logger *zerolog.Logger) *Client {
 	return &Client{
-		GHCli:    ghCli,
+		GHClient: ghClient,
 		log:      logger,
 		orgName:  orgName,
 		repoName: repo,
@@ -62,7 +62,7 @@ func NewClientFromGHClient(ghCli *gh.Client, orgName, repo string, logger *zerol
 }
 
 func (c *Client) GetConfigFile(owner, repoName, file, sha string) ([]byte, error) {
-	fileContent, _, _, err := c.GHCli.Repositories.GetContents(
+	fileContent, _, _, err := c.GHClient.Repositories.GetContents(
 		context.Background(),
 		owner,
 		repoName,
@@ -98,7 +98,7 @@ func (c *Client) GetFailedJenkinsURLs(parentCtx context.Context, owner, repoName
 	for {
 		ctx, cancel := context.WithTimeout(parentCtx, 30*time.Second)
 		cancels = append(cancels, cancel)
-		gs, resp, err := c.GHCli.Repositories.GetCombinedStatus(ctx, owner, repoName, sha, &gh.ListOptions{
+		gs, resp, err := c.GHClient.Repositories.GetCombinedStatus(ctx, owner, repoName, sha, &gh.ListOptions{
 			Page: nextPage,
 		})
 		if err != nil {

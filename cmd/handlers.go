@@ -33,17 +33,16 @@ type PRCommentHandler struct {
 }
 
 func (h *PRCommentHandler) Handles() []string {
-	return []string{"pull_request", "pull_request_review", "status", "issue_comment"}
+	return []string{"pull_request", "pull_request_review", "status", "check_run", "issue_comment"}
 }
 
 func (h *PRCommentHandler) Handle(ctx context.Context, eventType, deliveryID string, payload []byte) error {
-	// pull_request -> PullRequestEvent
-	// pull_request_review -> PullRequestReviewEvent
-	// status -> StatusEvent
 	var err error
 	switch eventType {
 	case "status":
 		err = h.HandleStatusEvent(ctx, payload)
+	case "check_run":
+		err = h.HandleCheckRunEvent(ctx, payload)
 	case "pull_request_review":
 		err = h.HandlePullRequestReviewEvent(ctx, payload)
 	case "pull_request":
@@ -62,18 +61,18 @@ func (h *PRCommentHandler) Handle(ctx context.Context, eventType, deliveryID str
 func (h *PRCommentHandler) HandlePullRequestEvent(ctx context.Context, payload []byte) error {
 	var event gh.PullRequestEvent
 	if err := json.Unmarshal(payload, &event); err != nil {
-		return errors.Wrap(err, "failed to parse issue comment event payload")
+		return errors.Wrap(err, "failed to parse pull request event payload")
 	}
 	installationID := event.GetInstallation().GetID()
 
-	installCli, err := h.NewInstallationClient(installationID)
+	installClient, err := h.NewInstallationClient(installationID)
 	if err != nil {
 		return err
 	}
 
 	owner := event.PullRequest.Base.Repo.GetOwner().GetLogin()
 	repoName := event.PullRequest.Base.Repo.GetName()
-	ghClient := github.NewClientFromGHClient(installCli, owner, repoName, zerolog.Ctx(ctx))
+	ghClient := github.NewClientFromGHClient(installClient, owner, repoName, zerolog.Ctx(ctx))
 	ghSha := event.PullRequest.Base.GetSHA()
 
 	actionCfgPath, cfgFile, err := github.GetActionsCfg(ghClient, owner, repoName, ghSha)
@@ -96,18 +95,18 @@ func (h *PRCommentHandler) HandlePullRequestEvent(ctx context.Context, payload [
 func (h *PRCommentHandler) HandleStatusEvent(ctx context.Context, payload []byte) error {
 	var event gh.StatusEvent
 	if err := json.Unmarshal(payload, &event); err != nil {
-		return errors.Wrap(err, "failed to parse issue comment event payload")
+		return errors.Wrap(err, "failed to parse status event payload")
 	}
 	installationID := event.GetInstallation().GetID()
 
-	installCli, err := h.NewInstallationClient(installationID)
+	installClient, err := h.NewInstallationClient(installationID)
 	if err != nil {
 		return err
 	}
 
 	owner := event.Repo.GetOwner().GetLogin()
 	repoName := event.Repo.GetName()
-	ghClient := github.NewClientFromGHClient(installCli, owner, repoName, zerolog.Ctx(ctx))
+	ghClient := github.NewClientFromGHClient(installClient, owner, repoName, zerolog.Ctx(ctx))
 	ghSha := event.GetSHA()
 
 	actionCfgPath, cfgFile, err := github.GetActionsCfg(ghClient, owner, repoName, ghSha)
@@ -130,18 +129,18 @@ func (h *PRCommentHandler) HandleStatusEvent(ctx context.Context, payload []byte
 func (h *PRCommentHandler) HandlePullRequestReviewEvent(ctx context.Context, payload []byte) error {
 	var event gh.PullRequestReviewEvent
 	if err := json.Unmarshal(payload, &event); err != nil {
-		return errors.Wrap(err, "failed to parse issue comment event payload")
+		return errors.Wrap(err, "failed to parse pull request review event payload")
 	}
 	installationID := event.GetInstallation().GetID()
 
-	installCli, err := h.NewInstallationClient(installationID)
+	installClient, err := h.NewInstallationClient(installationID)
 	if err != nil {
 		return err
 	}
 
 	owner := event.PullRequest.Base.Repo.GetOwner().GetLogin()
 	repoName := event.PullRequest.Base.Repo.GetName()
-	ghClient := github.NewClientFromGHClient(installCli, owner, repoName, zerolog.Ctx(ctx))
+	ghClient := github.NewClientFromGHClient(installClient, owner, repoName, zerolog.Ctx(ctx))
 	ghSha := event.PullRequest.Base.GetSHA()
 
 	actionCfgPath, cfgFile, err := github.GetActionsCfg(ghClient, owner, repoName, ghSha)
@@ -198,7 +197,7 @@ func (h *PRCommentHandler) HandleIssueCommentEvent(ctx context.Context, payload 
 
 	installationID := event.GetInstallation().GetID()
 
-	installCli, err := h.NewInstallationClient(installationID)
+	installClient, err := h.NewInstallationClient(installationID)
 	if err != nil {
 		return err
 	}
@@ -206,11 +205,11 @@ func (h *PRCommentHandler) HandleIssueCommentEvent(ctx context.Context, payload 
 	owner := event.Repo.GetOwner().GetLogin()
 	repoName := event.Repo.GetName()
 
-	ghClient := github.NewClientFromGHClient(installCli, owner, repoName, zerolog.Ctx(ctx))
+	ghClient := github.NewClientFromGHClient(installClient, owner, repoName, zerolog.Ctx(ctx))
 
 	prNumber := event.GetIssue().GetNumber()
 
-	pr, _, err := ghClient.GHCli.PullRequests.Get(ctx, owner, repoName, prNumber)
+	pr, _, err := ghClient.GHClient.PullRequests.Get(ctx, owner, repoName, prNumber)
 	if err != nil {
 		return err
 	}
@@ -232,4 +231,43 @@ func (h *PRCommentHandler) HandleIssueCommentEvent(ctx context.Context, payload 
 	}
 
 	return ghClient.HandleIssueCommentEvent(ctx, c.FlakeTracker, jobName, pr, &event)
+}
+
+func (h *PRCommentHandler) HandleCheckRunEvent(ctx context.Context, payload []byte) error {
+	var event gh.CheckRunEvent
+	if err := json.Unmarshal(payload, &event); err != nil {
+		return errors.Wrap(err, "failed to parse check run event payload")
+	}
+
+	if event.GetAction() != "completed" {
+		return nil
+	}
+
+	installationID := event.GetInstallation().GetID()
+
+	installClient, err := h.NewInstallationClient(installationID)
+	if err != nil {
+		return err
+	}
+
+	owner := event.Repo.GetOwner().GetLogin()
+	repoName := event.Repo.GetName()
+	ghClient := github.NewClientFromGHClient(installClient, owner, repoName, zerolog.Ctx(ctx))
+	ghSha := event.GetCheckRun().GetHeadSHA()
+
+	actionCfgPath, cfgFile, err := github.GetActionsCfg(ghClient, owner, repoName, ghSha)
+	if err != nil {
+		return err
+	}
+	if actionCfgPath == "" {
+		return fmt.Errorf("unable to find config files in sha %s", ghSha)
+	}
+
+	var c github.PRBlockerConfig
+	err = yaml.Unmarshal(cfgFile, &c)
+	if err != nil {
+		return fmt.Errorf("unable to unmarshal config %q file: %s\n", actionCfgPath, err)
+	}
+
+	return ghClient.HandleCheckRunEvent(c, &event)
 }

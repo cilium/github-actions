@@ -17,6 +17,7 @@ package github
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"regexp"
 	"strings"
@@ -113,7 +114,7 @@ func (c *Client) HandlePullRequestEvent(cfg PRBlockerConfig, pre *gh.PullRequest
 			// Remove ready-to-merge label if it is present and the developer
 			// synchronized the PR
 			if _, ok := prLabels[cfg.AutoMerge.Label]; ok {
-				_, err := c.GHCli.Issues.RemoveLabelForIssue(
+				_, err := c.GHClient.Issues.RemoveLabelForIssue(
 					context.Background(), owner, repoName, prNumber, cfg.AutoMerge.Label)
 				if err != nil {
 					return err
@@ -222,7 +223,7 @@ func (c *Client) HandleStatusEvent(cfg PRBlockerConfig, se *gh.StatusEvent) erro
 	for {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		cancels = append(cancels, cancel)
-		issues, resp, err := c.GHCli.Search.Issues(ctx, se.GetSHA(), &gh.SearchOptions{
+		issues, resp, err := c.GHClient.Search.Issues(ctx, se.GetSHA(), &gh.SearchOptions{
 			ListOptions: gh.ListOptions{
 				Page: nextPage,
 			},
@@ -235,7 +236,7 @@ func (c *Client) HandleStatusEvent(cfg PRBlockerConfig, se *gh.StatusEvent) erro
 			if o != c.orgName || r != c.repoName {
 				continue
 			}
-			pr, _, err := c.GHCli.PullRequests.Get(ctx, o, r, pr.GetNumber())
+			pr, _, err := c.GHClient.PullRequests.Get(ctx, o, r, pr.GetNumber())
 			if err != nil {
 				c.Log().Warn().Msgf("Unable to get PR for sha %s", se.GetSHA())
 				continue
@@ -271,6 +272,29 @@ func (c *Client) HandleStatusEvent(cfg PRBlockerConfig, se *gh.StatusEvent) erro
 		}
 		break
 	}
+	return nil
+}
+
+func (c *Client) HandleCheckRunEvent(cfg PRBlockerConfig, e *gh.CheckRunEvent) error {
+	owner := e.Repo.GetOwner().GetLogin()
+	repoName := *e.Repo.Name
+
+	cfg.AutoMerge.Label = "ready-to-merge"
+	cfg.AutoMerge.MinimalApprovals = 1
+
+	for _, pr := range e.GetCheckRun().PullRequests {
+		if pr.GetDraft() {
+			c.Log().Info().Fields(map[string]interface{}{"pr-number": pr.GetNumber()}).Msgf("PR is in draft")
+			continue
+		}
+
+		prLabels := parseGHLabels(pr.Labels)
+
+		if err := c.AutoMerge(cfg.AutoMerge, owner, repoName, pr.GetBase(), pr.GetHead(), pr.GetNumber(), prLabels, nil); err != nil {
+			return fmt.Errorf("failed to automerge: %w", err)
+		}
+	}
+
 	return nil
 }
 
