@@ -54,7 +54,7 @@ func (c *Client) GetFlakeIssues(ctx context.Context, owner, repo, creator string
 			return nil, ctx.Err()
 		default:
 		}
-		ghIssues, resp, err := c.GHCli.Issues.ListByRepo(ctx, owner, repo, &gh.IssueListByRepoOptions{
+		ghIssues, resp, err := c.GHClient.Issues.ListByRepo(ctx, owner, repo, &gh.IssueListByRepoOptions{
 			State:  "open",
 			Labels: labels,
 			ListOptions: gh.ListOptions{
@@ -91,7 +91,7 @@ func (c *Client) GetFlakeIssues(ctx context.Context, owner, repo, creator string
 		}
 
 		// Get all GH issues created by MLH since it's easier to parse them.
-		ghIssues, resp, err := c.GHCli.Issues.ListByRepo(ctx, owner, repo, &gh.IssueListByRepoOptions{
+		ghIssues, resp, err := c.GHClient.Issues.ListByRepo(ctx, owner, repo, &gh.IssueListByRepoOptions{
 			State:   "all",
 			Creator: creator,
 			Labels:  labels,
@@ -151,7 +151,7 @@ func (c *Client) findDupIssue(ctx context.Context, owner string, repo string, gh
 			return 0, ctx.Err()
 		default:
 		}
-		ghIssues, resp, err := c.GHCli.Issues.ListComments(ctx, owner, repo, ghIssueNumber, &gh.IssueListCommentsOptions{
+		ghIssues, resp, err := c.GHClient.Issues.ListComments(ctx, owner, repo, ghIssueNumber, &gh.IssueListCommentsOptions{
 			ListOptions: gh.ListOptions{
 				Page: nextPage,
 			},

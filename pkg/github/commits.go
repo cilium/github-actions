@@ -55,7 +55,7 @@ func (c *Client) commitContains(owner, repoName string, prNumber int, msg string
 			Page:    page,
 			PerPage: 10,
 		}
-		commits, resp, err := c.GHCli.PullRequests.ListCommits(ctx, owner, repoName, prNumber, opts)
+		commits, resp, err := c.GHClient.PullRequests.ListCommits(ctx, owner, repoName, prNumber, opts)
 		if err != nil {
 			return nil, err
 		}
@@ -90,7 +90,7 @@ func (c *Client) CommitContains(msgsInCommit []MsgInCommit, owner, repoName stri
 			for _, lbl := range msgRequired.SetLabels {
 				ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 				cancels = append(cancels, cancel)
-				_, err := c.GHCli.Issues.RemoveLabelForIssue(ctx, owner, repoName, prNumber, lbl)
+				_, err := c.GHClient.Issues.RemoveLabelForIssue(ctx, owner, repoName, prNumber, lbl)
 				if err != nil && !IsNotFound(err) {
 					return err
 				}
@@ -109,7 +109,7 @@ func (c *Client) CommitContains(msgsInCommit []MsgInCommit, owner, repoName stri
 		comment = fmt.Sprintf(comment, strings.Join(commits, ", "))
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		cancels = append(cancels, cancel)
-		_, _, err = c.GHCli.Issues.CreateComment(ctx, owner, repoName, prNumber, &gh.IssueComment{
+		_, _, err = c.GHClient.Issues.CreateComment(ctx, owner, repoName, prNumber, &gh.IssueComment{
 			Body: &comment,
 		})
 		if err != nil {
@@ -117,7 +117,7 @@ func (c *Client) CommitContains(msgsInCommit []MsgInCommit, owner, repoName stri
 		}
 		ctx, cancel = context.WithTimeout(context.Background(), 30*time.Second)
 		cancels = append(cancels, cancel)
-		_, _, err = c.GHCli.Issues.AddLabelsToIssue(ctx, owner, repoName, prNumber, msgRequired.SetLabels)
+		_, _, err = c.GHClient.Issues.AddLabelsToIssue(ctx, owner, repoName, prNumber, msgRequired.SetLabels)
 		if err != nil {
 			return err
 		}

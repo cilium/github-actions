@@ -50,7 +50,7 @@ func (c *Client) AutoLabel(labels []string, owner string, repoName string, prNum
 		return nil
 	}
 
-	_, _, err := c.GHCli.Issues.AddLabelsToIssue(
+	_, _, err := c.GHClient.Issues.AddLabelsToIssue(
 		context.Background(), owner, repoName, prNumber, labels)
 	return err
 }

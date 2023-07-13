@@ -37,14 +37,14 @@ var (
 // CommentAndOpenIssue creates a comment and (re-)opens a GH issue in case it is
 // closed.
 func (c *Client) CommentAndOpenIssue(ctx context.Context, owner, repo string, issueNumber int, body string) error {
-	_, _, err := c.GHCli.Issues.CreateComment(ctx, owner, repo, issueNumber, &gh.IssueComment{
+	_, _, err := c.GHClient.Issues.CreateComment(ctx, owner, repo, issueNumber, &gh.IssueComment{
 		Body: &body,
 	})
 	if err != nil {
 		return err
 	}
 
-	_, _, err = c.GHCli.Issues.Edit(ctx, owner, repo, issueNumber, &gh.IssueRequest{
+	_, _, err = c.GHClient.Issues.Edit(ctx, owner, repo, issueNumber, &gh.IssueRequest{
 		State: func() *string { a := "open"; return &a }(),
 	})
 
@@ -53,7 +53,7 @@ func (c *Client) CommentAndOpenIssue(ctx context.Context, owner, repo string, is
 
 // CreateIssue creates a new GH issue. Returns the issue number created.
 func (c *Client) CreateIssue(ctx context.Context, owner, repo string, title, body string, labels []string) (int, error) {
-	ghIssue, _, err := c.GHCli.Issues.Create(ctx, owner, repo, &gh.IssueRequest{
+	ghIssue, _, err := c.GHClient.Issues.Create(ctx, owner, repo, &gh.IssueRequest{
 		Title:  &title,
 		Body:   &body,
 		Labels: &labels,

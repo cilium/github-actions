@@ -76,7 +76,7 @@ func (c *Client) BlockPRWith(blockPRConfig BlockPRWith, owner, repoName string, 
 			for _, lbl := range lblsUnset.SetLabels {
 				ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 				cancels = append(cancels, cancel)
-				_, err := c.GHCli.Issues.RemoveLabelForIssue(ctx, owner, repoName, prNumber, lbl)
+				_, err := c.GHClient.Issues.RemoveLabelForIssue(ctx, owner, repoName, prNumber, lbl)
 				if err != nil && !IsNotFound(err) {
 					return false, nil, err
 				}
@@ -91,7 +91,7 @@ func (c *Client) BlockPRWith(blockPRConfig BlockPRWith, owner, repoName string, 
 			if lblsUnset.Helper != "" && !subslice(lblsUnset.SetLabels, prLabels) {
 				ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 				cancels = append(cancels, cancel)
-				_, _, err := c.GHCli.Issues.CreateComment(ctx, owner, repoName, prNumber, &gh.IssueComment{
+				_, _, err := c.GHClient.Issues.CreateComment(ctx, owner, repoName, prNumber, &gh.IssueComment{
 					Body: &lblsUnset.Helper,
 				})
 				if err != nil {
@@ -101,7 +101,7 @@ func (c *Client) BlockPRWith(blockPRConfig BlockPRWith, owner, repoName string, 
 			if len(lblsUnset.SetLabels) != 0 {
 				ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 				cancels = append(cancels, cancel)
-				_, _, err := c.GHCli.Issues.AddLabelsToIssue(ctx, owner, repoName, prNumber, lblsUnset.SetLabels)
+				_, _, err := c.GHClient.Issues.AddLabelsToIssue(ctx, owner, repoName, prNumber, lblsUnset.SetLabels)
 				if err != nil {
 					return false, nil, err
 				}
@@ -170,7 +170,7 @@ func (c *Client) UpdateMergeabilityCheck(
 	cancels = append(cancels, cancel)
 	nextPage := 0
 	for {
-		lc, resp, err := c.GHCli.Checks.ListCheckRunsForRef(ctx, owner, repoName, head.GetSHA(), &gh.ListCheckRunsOptions{
+		lc, resp, err := c.GHClient.Checks.ListCheckRunsForRef(ctx, owner, repoName, head.GetSHA(), &gh.ListCheckRunsOptions{
 			CheckName: func() *string { a := checkerName; return &a }(),
 			ListOptions: gh.ListOptions{
 				Page: nextPage,
@@ -185,7 +185,7 @@ func (c *Client) UpdateMergeabilityCheck(
 					if pr.GetNumber() == prNumber {
 						ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 						cancels = append(cancels, cancel)
-						_, _, err := c.GHCli.Checks.UpdateCheckRun(ctx, owner, repoName, cr.GetID(), gh.UpdateCheckRunOptions{
+						_, _, err := c.GHClient.Checks.UpdateCheckRun(ctx, owner, repoName, cr.GetID(), gh.UpdateCheckRunOptions{
 							Name:       checkerName,
 							ExternalID: head.SHA,
 							Status:     func() *string { a := "completed"; return &a }(),
@@ -223,7 +223,7 @@ func (c *Client) UpdateMergeabilityCheck(
 		case IsNotFound(err):
 			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 			cancels = append(cancels, cancel)
-			_, _, err := c.GHCli.Checks.CreateCheckRun(ctx, owner, repoName, gh.CreateCheckRunOptions{
+			_, _, err := c.GHClient.Checks.CreateCheckRun(ctx, owner, repoName, gh.CreateCheckRunOptions{
 				Name:       checkerName,
 				HeadSHA:    head.GetSHA(),
 				ExternalID: head.SHA,
