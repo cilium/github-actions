@@ -1,0 +1,42 @@
+name: Go
+on:
+  push:
+    branches:
+      - master
+  pull_request: {}
+
+# By specifying the access of one of the scopes, all of those that are not specified are set to 'none'.
+permissions:
+  # To be able to access the repository with `actions/checkout`
+  contents: read
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@fac708d6674e30b6ba41289acaab6d4b75aa0753 # v4.0.1
+        with:
+          go-version: 1.20.5
+
+      - name: Check module vendoring
+        run: |
+          go mod tidy
+          go mod vendor
+          go mod verify
+          test -z "$(git status --porcelain)" || (echo "please run 'go mod tidy && go mod vendor', and submit your changes"; exit 1)
+
+      - name: Build
+        run: go build ./...
+
+      - name: Test
+        run: go test ./...
+
+      - name: Vet
+        run: go vet ./...
