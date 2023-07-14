@@ -232,7 +232,7 @@ func (c *Client) HandleStatusEvent(cfg PRBlockerConfig, se *gh.StatusEvent) erro
 			return err
 		}
 		for _, pr := range issues.Issues {
-			o, r := OwnerRepoFromRepositoryURL(pr.GetRepositoryURL())
+			o, r := ownerRepoFromRepositoryURL(pr.GetRepositoryURL())
 			if o != c.orgName || r != c.repoName {
 				continue
 			}
@@ -283,6 +283,11 @@ func (c *Client) HandleCheckRunEvent(cfg PRBlockerConfig, e *gh.CheckRunEvent) e
 	cfg.AutoMerge.MinimalApprovals = 1
 
 	for _, pr := range e.GetCheckRun().PullRequests {
+		o, r := ownerRepoFromRepositoryURL(pr.GetHead().GetRepo().GetURL())
+		if o != c.orgName || r != c.repoName {
+			continue
+		}
+
 		if pr.GetDraft() {
 			c.Log().Info().Fields(map[string]interface{}{"pr-number": pr.GetNumber()}).Msgf("PR is in draft")
 			continue
@@ -315,7 +320,7 @@ func IsHTTPErrorCode(err error, httpCode int) bool {
 	return false
 }
 
-func OwnerRepoFromRepositoryURL(s string) (owner, repo string) {
+func ownerRepoFromRepositoryURL(s string) (owner, repo string) {
 	path := strings.Split(s, "/")
 	if len(path) < 2 {
 		return "", ""
