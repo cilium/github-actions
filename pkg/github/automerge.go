@@ -45,6 +45,9 @@ func (c *Client) AutoMerge(
 
 	if len(ciChecks) != 0 {
 		c.log.Info().Fields(map[string]interface{}{
+			"owner":     owner,
+			"repo":      repoName,
+			"pr-number": prNumber,
 			"ci-checks": ciChecks,
 		}).Msg("Not auto merging because ci failed")
 		return nil
@@ -61,6 +64,9 @@ func (c *Client) AutoMerge(
 	commitDate := commit.GetCommit().GetCommitter().GetDate()
 	if commitDate.IsZero() {
 		c.log.Info().Fields(map[string]interface{}{
+			"owner":       owner,
+			"repo":        repoName,
+			"pr-number":   prNumber,
 			"sha":         head.GetSHA(),
 			"commit":      gh.Stringify(commit.GetCommit()),
 			"full-commit": gh.Stringify(commit),

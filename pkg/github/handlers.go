@@ -232,11 +232,14 @@ func (c *Client) HandleStatusEvent(cfg PRBlockerConfig, se *gh.StatusEvent) erro
 			return err
 		}
 		for _, pr := range issues.Issues {
-			o, r := ownerRepoFromRepositoryURL(pr.GetRepositoryURL())
-			if o != c.orgName || r != c.repoName {
+			prOrgName, prRepoName, err := ownerRepoFromRepositoryURL(pr.GetRepositoryURL())
+			if err != nil {
+				return fmt.Errorf("failed to extract org & repo name from PR URL: %w", err)
+			}
+			if prOrgName != c.orgName || prRepoName != c.repoName {
 				continue
 			}
-			pr, _, err := c.GHClient.PullRequests.Get(ctx, o, r, pr.GetNumber())
+			pr, _, err := c.GHClient.PullRequests.Get(ctx, prOrgName, prRepoName, pr.GetNumber())
 			if err != nil {
 				c.Log().Warn().Msgf("Unable to get PR for sha %s", se.GetSHA())
 				continue
@@ -276,15 +279,16 @@ func (c *Client) HandleStatusEvent(cfg PRBlockerConfig, se *gh.StatusEvent) erro
 }
 
 func (c *Client) HandleCheckRunEvent(cfg PRBlockerConfig, e *gh.CheckRunEvent) error {
-	owner := e.Repo.GetOwner().GetLogin()
-	repoName := *e.Repo.Name
-
 	cfg.AutoMerge.Label = "ready-to-merge"
 	cfg.AutoMerge.MinimalApprovals = 1
 
 	for _, pr := range e.GetCheckRun().PullRequests {
-		o, r := ownerRepoFromRepositoryURL(pr.GetHead().GetRepo().GetURL())
-		if o != c.orgName || r != c.repoName {
+		prOrgName, prRepoName, err := ownerRepoFromRepositoryURL(pr.GetBase().GetRepo().GetURL())
+		if err != nil {
+			return fmt.Errorf("failed to extract org & repo name from PR URL: %w", err)
+		}
+		if prOrgName != c.orgName || prRepoName != c.repoName {
+			c.Log().Info().Fields(map[string]interface{}{"pr-number": pr.GetNumber()}).Msgf("PR belongs to a fork")
 			continue
 		}
 
@@ -295,7 +299,7 @@ func (c *Client) HandleCheckRunEvent(cfg PRBlockerConfig, e *gh.CheckRunEvent) e
 
 		prLabels := parseGHLabels(pr.Labels)
 
-		if err := c.AutoMerge(cfg.AutoMerge, owner, repoName, pr.GetBase(), pr.GetHead(), pr.GetNumber(), prLabels, nil); err != nil {
+		if err := c.AutoMerge(cfg.AutoMerge, prOrgName, prRepoName, pr.GetBase(), pr.GetHead(), pr.GetNumber(), prLabels, nil); err != nil {
 			return fmt.Errorf("failed to automerge: %w", err)
 		}
 	}
@@ -320,12 +324,17 @@ func IsHTTPErrorCode(err error, httpCode int) bool {
 	return false
 }
 
-func ownerRepoFromRepositoryURL(s string) (owner, repo string) {
-	path := strings.Split(s, "/")
+func ownerRepoFromRepositoryURL(url string) (owner, repo string, err error) {
+	path := strings.Split(url, "/")
 	if len(path) < 2 {
-		return "", ""
+		return "", "", fmt.Errorf("invalid URL: %q", url)
 	}
 	owner = path[len(path)-2]
 	repo = path[len(path)-1]
+
+	if owner == "" || repo == "" {
+		return "", "", fmt.Errorf("empty owner or repo name in URL: %q", url)
+	}
+
 	return
 }
