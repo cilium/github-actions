@@ -14,4 +14,5 @@ github-actions:
 local: github-actions
 	strip github-actions
 
-clean: rm -fr github-actions
+clean:
+	rm -fr github-actions
