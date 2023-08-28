@@ -43,7 +43,7 @@ func init() {
 	flag.StringVar(&orgName, "org", "cilium", "GitHub organization name (for client-mode)")
 	flag.StringVar(&repoName, "repo", "cilium", "GitHub organization name (for client-mode)")
 	flag.IntVar(&prNumber, "pr", 0, "PR to check for flakes (for client-mode)")
-	flag.StringVar(&baseBranch, "branch", "master", "Base branch name (for client-mode)")
+	flag.StringVar(&baseBranch, "branch", "main", "Base branch name (for client-mode)")
 	flag.StringVar(&config, "config", "", "Flake config file (for client-mode)")
 	flag.BoolVar(&clientMode, "client-mode", false, "Runs MLH in client mode (useful for development)")
 	flag.Parse()
