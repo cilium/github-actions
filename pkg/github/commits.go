@@ -16,7 +16,9 @@ package github
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -24,20 +26,36 @@ import (
 )
 
 type MsgInCommit struct {
-	// Msg is the message that should be found in the commit message.
+	// Msg is the message that should be found in the commit message. Mutually
+	// exclusive with RegexpMsg.
 	Msg string `yaml:"msg,omitempty"`
-	// Helper is the message that should be printed if 'Msg' is not found in
-	// the commit message.
+	// RegexpMsg is a regular expression to match the commit message. Mutually
+	// exclusive with Msg.
+	RegexpMsg string `yaml:"regexpMsg,omitempty"`
+	// Helper is the message that should be printed if the commit message
+	// doesn't contains 'Msg' or doesn't match 'RegexpMsg'.
 	Helper string `yaml:"helper,omitempty"`
-	// SetLabels are the labels to be set in the PR for which Msg was not found.
+	// SetLabels are the labels to be set in the PR if the commit message
+	// doesn't contains 'Msg' or doesn't match 'RegexpMsg'.
 	SetLabels []string `yaml:"set-labels,omitempty"`
 }
 
-// commitsContains checks if the all commits of the given prNumber contains the
-// given msg.
-// Returns a slice of commit IDs that don't contain the given msg or an error
-// in case of an error.
-func (c *Client) commitContains(owner, repoName string, prNumber int, msg string) ([]string, error) {
+// Regexp returns a regular expression to be matched either based on Msg or
+// RegexpMsg.
+func (m MsgInCommit) Regexp() (*regexp.Regexp, error) {
+	switch {
+	case len(m.Msg) > 0:
+		return regexp.Compile(regexp.QuoteMeta(m.Msg))
+	case len(m.RegexpMsg) > 0:
+		return regexp.Compile(m.RegexpMsg)
+	}
+	return nil, errors.New("no msg or regexpMsg configured")
+}
+
+// commitMatches checks if the all commits of the given prNumber matches the
+// given regexp.
+// Returns a slice of commit IDs that don't match the given regexp or an error.
+func (c *Client) commitMatches(owner, repoName string, prNumber int, re *regexp.Regexp) ([]string, error) {
 	var (
 		missSignOff []string
 		cancels     []context.CancelFunc
@@ -60,7 +78,7 @@ func (c *Client) commitContains(owner, repoName string, prNumber int, msg string
 			return nil, err
 		}
 		for _, commit := range commits {
-			if !strings.Contains(commit.GetCommit().GetMessage(), msg) {
+			if !re.MatchString(commit.GetCommit().GetMessage()) {
 				missSignOff = append(missSignOff, commit.GetSHA())
 			}
 		}
@@ -82,7 +100,11 @@ func (c *Client) CommitContains(msgsInCommit []MsgInCommit, owner, repoName stri
 		}
 	}()
 	for _, msgRequired := range msgsInCommit {
-		commits, err := c.commitContains(owner, repoName, prNumber, msgRequired.Msg)
+		re, err := msgRequired.Regexp()
+		if err != nil {
+			return err
+		}
+		commits, err := c.commitMatches(owner, repoName, prNumber, re)
 		if err != nil {
 			return err
 		}
@@ -99,9 +121,9 @@ func (c *Client) CommitContains(msgsInCommit []MsgInCommit, owner, repoName stri
 		}
 		var comment string
 		if len(commits) == 1 {
-			comment = fmt.Sprintf("Commit %%s does not contain %q.", msgRequired.Msg)
+			comment = fmt.Sprintf("Commit %%s does not match %q.", re)
 		} else {
-			comment = fmt.Sprintf("Commits %%s do not contain %q.", msgRequired.Msg)
+			comment = fmt.Sprintf("Commits %%s do not match %q.", re)
 		}
 		if msgRequired.Helper != "" {
 			comment += fmt.Sprintf("\n\nPlease follow instructions provided in %s", msgRequired.Helper)

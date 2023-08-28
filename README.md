@@ -41,6 +41,8 @@ move-to-projects-for-labels-xored:
       column: "Backport done to v1.5"
 # Require msg to be presented in all commits from the given PR
 require-msgs-in-commit:
+    # the expected string to be found in the commit. Alternatively you can
+    # match the commit against a regular expression with regexpMsg instead.
   - msg: "Signed-off-by"
     # Helper message that will be set as a comment if the PR does not contain
     # a the required msg in the commit message.
