@@ -63,16 +63,16 @@ var (
 )
 
 func runClient() {
-	flakeCfg, err := loadConfig(config)
+	cfg, err := loadConfig(config)
 	if err != nil {
 		panic(err)
 	}
 
-	triggerRegexp := regexp.MustCompile(flakeCfg.JenkinsConfig.RegexTrigger)
+	triggerRegexp := regexp.MustCompile(cfg.FlakeTracker.JenkinsConfig.RegexTrigger)
 
 	useCache := false
 
-	if len(flakeCfg.JenkinsConfig.StableJobNames) != len(flakeCfg.JenkinsConfig.PRJobNames) {
+	if len(cfg.FlakeTracker.JenkinsConfig.StableJobNames) != len(cfg.FlakeTracker.JenkinsConfig.PRJobNames) {
 		panic(fmt.Sprintf("%s jobs and PR jobs should have the same length", baseBranch))
 	}
 	var (
@@ -129,7 +129,7 @@ func runClient() {
 		// GH Issues
 		fmt.Printf("Getting Issues from GH\n")
 
-		issueKnownFlakes, err = ghClient.GetFlakeIssues(globalCtx, orgName, repoName, github.IssueCreator, flakeCfg.IssueTracker.IssueLabels)
+		issueKnownFlakes, err = ghClient.GetFlakeIssues(globalCtx, orgName, repoName, github.IssueCreator, cfg.FlakeTracker.IssueTracker.IssueLabels)
 		if err != nil {
 			panic(err)
 		}
@@ -144,7 +144,7 @@ func runClient() {
 		jobNameToJenkinsFails = map[string]jenkins.JenkinsFailures{}
 	}
 
-	jc, err := jenkins.NewJenkinsClient(globalCtx, flakeCfg.JenkinsConfig.JenkinsURL, false)
+	jc, err := jenkins.NewJenkinsClient(globalCtx, cfg.FlakeTracker.JenkinsConfig.JenkinsURL, false)
 	if err != nil {
 		panic(err)
 	}
@@ -156,23 +156,26 @@ func runClient() {
 		default:
 		}
 
-		err := ghClient.TriagePRFailures(globalCtx, jc, flakeCfg, prNumber, urlFails, issueKnownFlakes, jobNameToJenkinsFails, triggerRegexp)
+		err := ghClient.TriagePRFailures(globalCtx, jc, cfg.FlakeTracker, prNumber, urlFails, issueKnownFlakes, jobNameToJenkinsFails, triggerRegexp)
 		if err != nil {
 			panic(err)
 		}
 	}
 }
 
-func loadConfig(cfgFile string) (*github.FlakeConfig, error) {
+func loadConfig(cfgFile string) (*github.PRBlockerConfig, error) {
 	b, err := ioutil.ReadFile(cfgFile)
 	if err != nil {
 		return nil, err
 	}
 
-	var cfg github.FlakeConfig
+	var cfg github.PRBlockerConfig
 	err = yaml.Unmarshal(b, &cfg)
 	if err != nil {
 		return nil, err
+	}
+	if cfg.FlakeTracker == nil {
+		cfg.FlakeTracker = &github.FlakeConfig{}
 	}
 
 	return &cfg, nil
