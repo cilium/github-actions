@@ -24,7 +24,7 @@ import (
 	"time"
 
 	"github.com/cilium/github-actions/pkg/jenkins"
-	gh "github.com/google/go-github/v50/github"
+	gh "github.com/google/go-github/v53/github"
 )
 
 func (c *Client) HandlePullRequestEvent(cfg PRBlockerConfig, pre *gh.PullRequestEvent) error {
