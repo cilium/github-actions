@@ -101,6 +101,11 @@ func runClient() {
 		ghClient = github.NewClient(os.Getenv("GITHUB_TOKEN"), orgName, repoName, zerolog.Ctx(globalCtx))
 
 		if prNumber != 0 {
+			err := ghClient.CommitContains(cfg.RequireMsgsInCommit, orgName, repoName, prNumber)
+			if err != nil {
+				panic(err)
+			}
+
 			ctx := context.WithValue(globalCtx, "include-draft", true)
 			prJenkinsURLFail, err := ghClient.GetPRFailures(ctx, prNumber)
 			if err != nil {
