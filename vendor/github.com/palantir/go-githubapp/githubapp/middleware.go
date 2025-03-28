@@ -34,8 +34,6 @@ const (
 
 	MetricsKeyRateLimit          = "github.rate.limit"
 	MetricsKeyRateLimitRemaining = "github.rate.remaining"
-	MetricsKeyRateLimitUsed      = "github.rate.used"
-	MetricsKeyRateLimitReset     = "github.rate.reset"
 )
 
 // ClientMetrics creates client middleware that records metrics about all
@@ -75,15 +73,10 @@ func ClientMetrics(registry metrics.Registry) ClientMiddleware {
 
 				limitMetric := fmt.Sprintf("%s[installation:%d]", MetricsKeyRateLimit, installationID)
 				remainingMetric := fmt.Sprintf("%s[installation:%d]", MetricsKeyRateLimitRemaining, installationID)
-				usedMetric := fmt.Sprintf("%s[installation:%d]", MetricsKeyRateLimitUsed, installationID)
-				resetMetric := fmt.Sprintf("%s[installation:%d]", MetricsKeyRateLimitReset, installationID)
 
 				// Headers from https://developer.github.com/v3/#rate-limiting
-				updateRegistryForHeader(res.Header, httpHeaderRateLimit, metrics.GetOrRegisterGauge(limitMetric, registry))
-				updateRegistryForHeader(res.Header, httpHeaderRateRemaining, metrics.GetOrRegisterGauge(remainingMetric, registry))
-				updateRegistryForHeader(res.Header, httpHeaderRateUsed, metrics.GetOrRegisterGauge(usedMetric, registry))
-				updateRegistryForHeader(res.Header, httpHeaderRateReset, metrics.GetOrRegisterGauge(resetMetric, registry))
-				// TODO Think about to add X-Ratelimit-Resource as well
+				updateRegistryForHeader(res.Header, "X-RateLimit-Limit", metrics.GetOrRegisterGauge(limitMetric, registry))
+				updateRegistryForHeader(res.Header, "X-RateLimit-Remaining", metrics.GetOrRegisterGauge(remainingMetric, registry))
 			}
 
 			return res, err
