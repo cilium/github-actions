@@ -84,7 +84,7 @@ func (s *BurstSampler) Sample(lvl Level) bool {
 }
 
 func (s *BurstSampler) inc() uint32 {
-	now := TimestampFunc().UnixNano()
+	now := time.Now().UnixNano()
 	resetAt := atomic.LoadInt64(&s.resetAt)
 	var c uint32
 	if now > resetAt {
