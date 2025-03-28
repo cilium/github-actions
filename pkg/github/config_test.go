@@ -26,40 +26,6 @@ import (
 func TestConfigParser(t *testing.T) {
 
 	expect := PRBlockerConfig{
-		Project: Project{
-			ProjectName: "https://github.com/cilium/cilium/projects/80",
-			ColumnName:  "In progress",
-		},
-		MoveToProjectsForLabelsXORed: map[string]map[string]Project{
-			"v1.6": {
-				"needs-backport/1.6": {
-					ProjectName: "https://github.com/cilium/cilium/projects/91",
-					ColumnName:  "Needs backport from master",
-				},
-				"backport-pending/1.6": {
-					ProjectName: "https://github.com/cilium/cilium/projects/91",
-					ColumnName:  "Backport pending to v1.6",
-				},
-				"backport-done/1.6": {
-					ProjectName: "https://github.com/cilium/cilium/projects/91",
-					ColumnName:  "Backport done to v1.6",
-				},
-			},
-			"v1.5": {
-				"needs-backport/1.5": {
-					ProjectName: "https://github.com/cilium/cilium/projects/92",
-					ColumnName:  "Needs backport from master",
-				},
-				"backport-pending/1.5": {
-					ProjectName: "https://github.com/cilium/cilium/projects/92",
-					ColumnName:  "Backport pending to v1.5",
-				},
-				"backport-done/1.5": {
-					ProjectName: "https://github.com/cilium/cilium/projects/92",
-					ColumnName:  "Backport done to v1.5",
-				},
-			},
-		},
 		RequireMsgsInCommit: []MsgInCommit{
 			{
 				Msg:    "Signed-off-by",

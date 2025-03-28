@@ -22,13 +22,11 @@ import (
 )
 
 type PRBlockerConfig struct {
-	Project                      `yaml:",inline"`
-	MoveToProjectsForLabelsXORed map[string]map[string]Project `yaml:"move-to-projects-for-labels-xored,omitempty"`
-	RequireMsgsInCommit          []MsgInCommit                 `yaml:"require-msgs-in-commit,omitempty"`
-	AutoLabel                    []string                      `yaml:"auto-label,omitempty"`
-	BlockPRWith                  BlockPRWith                   `yaml:"block-pr-with,omitempty"`
-	AutoMerge                    AutoMerge                     `yaml:"auto-merge,omitempty"`
-	FlakeTracker                 *FlakeConfig                  `yaml:"flake-tracker,omitempty"`
+	RequireMsgsInCommit []MsgInCommit `yaml:"require-msgs-in-commit,omitempty"`
+	AutoLabel           []string      `yaml:"auto-label,omitempty"`
+	BlockPRWith         BlockPRWith   `yaml:"block-pr-with,omitempty"`
+	AutoMerge           AutoMerge     `yaml:"auto-merge,omitempty"`
+	FlakeTracker        *FlakeConfig  `yaml:"flake-tracker,omitempty"`
 }
 
 func GetActionsCfg(ghClient *Client, owner, repoName, ghSha string) (string, []byte, error) {
