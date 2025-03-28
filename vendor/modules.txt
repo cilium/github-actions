@@ -1,23 +1,3 @@
-# github.com/ProtonMail/go-crypto v0.0.0-20230828082145-3c4c8a2d2371
-## explicit; go 1.13
-github.com/ProtonMail/go-crypto/bitcurves
-github.com/ProtonMail/go-crypto/brainpool
-github.com/ProtonMail/go-crypto/eax
-github.com/ProtonMail/go-crypto/internal/byteutil
-github.com/ProtonMail/go-crypto/ocb
-github.com/ProtonMail/go-crypto/openpgp
-github.com/ProtonMail/go-crypto/openpgp/aes/keywrap
-github.com/ProtonMail/go-crypto/openpgp/armor
-github.com/ProtonMail/go-crypto/openpgp/ecdh
-github.com/ProtonMail/go-crypto/openpgp/ecdsa
-github.com/ProtonMail/go-crypto/openpgp/eddsa
-github.com/ProtonMail/go-crypto/openpgp/elgamal
-github.com/ProtonMail/go-crypto/openpgp/errors
-github.com/ProtonMail/go-crypto/openpgp/internal/algorithm
-github.com/ProtonMail/go-crypto/openpgp/internal/ecc
-github.com/ProtonMail/go-crypto/openpgp/internal/encoding
-github.com/ProtonMail/go-crypto/openpgp/packet
-github.com/ProtonMail/go-crypto/openpgp/s2k
 # github.com/bluekeyes/hatpear v0.1.1
 ## explicit; go 1.11
 github.com/bluekeyes/hatpear
@@ -27,29 +7,12 @@ github.com/bndr/gojenkins
 # github.com/bradleyfalzon/ghinstallation/v2 v2.14.0
 ## explicit; go 1.22.0
 github.com/bradleyfalzon/ghinstallation/v2
-# github.com/cloudflare/circl v1.3.3
-## explicit; go 1.19
-github.com/cloudflare/circl/dh/x25519
-github.com/cloudflare/circl/dh/x448
-github.com/cloudflare/circl/ecc/goldilocks
-github.com/cloudflare/circl/internal/conv
-github.com/cloudflare/circl/internal/sha3
-github.com/cloudflare/circl/math
-github.com/cloudflare/circl/math/fp25519
-github.com/cloudflare/circl/math/fp448
-github.com/cloudflare/circl/math/mlsbset
-github.com/cloudflare/circl/sign
-github.com/cloudflare/circl/sign/ed25519
-github.com/cloudflare/circl/sign/ed448
 # github.com/davecgh/go-spew v1.1.1
 ## explicit
 github.com/davecgh/go-spew/spew
 # github.com/golang-jwt/jwt/v4 v4.5.1
 ## explicit; go 1.16
 github.com/golang-jwt/jwt/v4
-# github.com/google/go-github/v53 v53.2.0
-## explicit; go 1.17
-github.com/google/go-github/v53/github
 # github.com/google/go-github/v69 v69.2.0
 ## explicit; go 1.22.0
 github.com/google/go-github/v69/github
@@ -122,13 +85,6 @@ goji.io
 goji.io/internal
 goji.io/pat
 goji.io/pattern
-# golang.org/x/crypto v0.36.0
-## explicit; go 1.23.0
-golang.org/x/crypto/argon2
-golang.org/x/crypto/blake2b
-golang.org/x/crypto/cast5
-golang.org/x/crypto/hkdf
-golang.org/x/crypto/sha3
 # golang.org/x/net v0.37.0
 ## explicit; go 1.23.0
 golang.org/x/net/html
@@ -142,7 +98,6 @@ golang.org/x/oauth2/internal
 golang.org/x/sync/semaphore
 # golang.org/x/sys v0.31.0
 ## explicit; go 1.23.0
-golang.org/x/sys/cpu
 golang.org/x/sys/unix
 # gopkg.in/yaml.v2 v2.4.0
 ## explicit; go 1.15
