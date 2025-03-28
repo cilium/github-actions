@@ -20,7 +20,7 @@ import (
 	"strings"
 	"time"
 
-	gh "github.com/google/go-github/v53/github"
+	gh "github.com/google/go-github/v70/github"
 )
 
 type AutoMerge struct {
@@ -227,7 +227,7 @@ func (c *Client) getCIStatus(
 		return nil, err
 	}
 	requiredContexts := map[string]struct{}{}
-	for _, ctx := range brProt.GetRequiredStatusChecks().Contexts {
+	for _, ctx := range *brProt.GetRequiredStatusChecks().Contexts {
 		requiredContexts[ctx] = struct{}{}
 	}
 

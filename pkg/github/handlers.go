@@ -16,7 +16,6 @@ package github
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"regexp"
@@ -24,7 +23,7 @@ import (
 	"time"
 
 	"github.com/cilium/github-actions/pkg/jenkins"
-	gh "github.com/google/go-github/v53/github"
+	gh "github.com/google/go-github/v70/github"
 )
 
 func (c *Client) HandlePullRequestEvent(cfg PRBlockerConfig, pre *gh.PullRequestEvent) error {
@@ -77,32 +76,6 @@ func (c *Client) HandlePullRequestEvent(cfg PRBlockerConfig, pre *gh.PullRequest
 				if err != nil {
 					return err
 				}
-			}
-		}
-	}
-
-	// Put PR in projects for release tracking
-	if len(cfg.Project.ColumnName) != 0 && len(cfg.Project.ProjectName) != 0 {
-		if action == "opened" {
-			err := c.PutPRInProject(owner, repoName, pr.GetID(), cfg.Project)
-			if err != nil {
-				// Ignore the error if the project was not found. It might mean
-				// the project was closed so we don't need to track this PR on
-				// it.
-				if !errors.Is(err, &ErrProjectNotFound{projectName: cfg.Project.ProjectName}) {
-					return err
-				}
-			}
-		}
-	}
-
-	// Put PR in projects for backport release tracking
-	if len(cfg.MoveToProjectsForLabelsXORed) != 0 {
-		switch action {
-		case "labeled", "unlabeled":
-			err := c.SyncPRProjects(cfg.MoveToProjectsForLabelsXORed, owner, repoName, pr.GetID(), prNumber, prLabels)
-			if err != nil {
-				return err
 			}
 		}
 	}
