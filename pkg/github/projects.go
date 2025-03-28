@@ -23,7 +23,7 @@ import (
 	"strings"
 	"time"
 
-	gh "github.com/google/go-github/v53/github"
+	gh "github.com/google/go-github/v70/github"
 )
 
 type ErrProjectNotFound struct {
