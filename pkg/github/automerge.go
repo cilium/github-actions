@@ -227,7 +227,7 @@ func (c *Client) getCIStatus(
 		return nil, err
 	}
 	requiredContexts := map[string]struct{}{}
-	for _, ctx := range brProt.GetRequiredStatusChecks().Contexts {
+	for _, ctx := range *brProt.GetRequiredStatusChecks().Contexts {
 		requiredContexts[ctx] = struct{}{}
 	}
 
