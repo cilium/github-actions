@@ -96,3 +96,78 @@ resource "google_compute_instance" "vm" {
     create_before_destroy = true
   }
 }
+
+# Add a Google-managed SSL certificate resource
+resource "google_compute_managed_ssl_certificate" "maintainers_lh_cert" {
+  name = "maintainers-lh-cert"
+
+  managed {
+    domains = ["maintainers-lh.cilium.rocks"]
+  }
+}
+
+# Add a global forwarding rule and target HTTPS proxy
+resource "google_compute_global_forwarding_rule" "https_forwarding_rule" {
+  name        = "https-forwarding-rule"
+  target      = google_compute_target_https_proxy.https_proxy.self_link
+  port_range  = "443"
+  ip_protocol = "TCP"
+  load_balancing_scheme = "EXTERNAL"
+}
+
+# Target HTTPS proxy
+resource "google_compute_target_https_proxy" "https_proxy" {
+  name             = "https-proxy"
+  ssl_certificates = [google_compute_managed_ssl_certificate.maintainers_lh_cert.self_link]
+  url_map          = google_compute_url_map.url_map.self_link
+}
+
+# URL map to route traffic to the backend service
+resource "google_compute_url_map" "url_map" {
+  name            = "url-map"
+  default_service = google_compute_backend_service.backend_service.self_link
+}
+
+# Backend service for the VM instance group
+resource "google_compute_backend_service" "backend_service" {
+  name                  = "backend-service"
+  load_balancing_scheme = "EXTERNAL"
+  protocol              = "HTTP"
+  backend {
+    group = google_compute_instance_group.instance_group.self_link
+  }
+  health_checks = [google_compute_health_check.http_health_check.self_link]
+}
+
+# Instance group for the VM
+resource "google_compute_instance_group" "instance_group" {
+  name        = "instance-group"
+  instances   = [google_compute_instance.vm.self_link]
+  zone        = var.zone
+}
+
+# HTTP health check for the backend service
+resource "google_compute_health_check" "http_health_check" {
+  name               = "http-health-check"
+  check_interval_sec = 10
+  timeout_sec        = 5
+  http_health_check {
+    port    = 80
+    request_path = "/healthz"
+  }
+}
+
+# Reserve a global static IP for the load balancer
+resource "google_compute_global_address" "lb_ip" {
+  name = "lb-ip"
+}
+
+# Update the global forwarding rule to use the reserved IP
+resource "google_compute_global_forwarding_rule" "https_forwarding_rule" {
+  name        = "https-forwarding-rule"
+  target      = google_compute_target_https_proxy.https_proxy.self_link
+  port_range  = "443"
+  ip_protocol = "TCP"
+  load_balancing_scheme = "EXTERNAL"
+  ip_address  = google_compute_global_address.lb_ip.address
+}
