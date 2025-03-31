@@ -72,7 +72,8 @@ resource "google_compute_instance" "vm" {
   network_interface {
     subnetwork_project = var.subnetwork_project
     subnetwork         = var.subnetwork
-    access_config {}
+    # Remove access_config to avoid assigning a public IP
+    # access_config {}
   }
 
   tags = ["http-server"]
