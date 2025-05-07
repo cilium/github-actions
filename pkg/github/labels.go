@@ -17,7 +17,7 @@ package github
 import (
 	"context"
 
-	gh "github.com/google/go-github/v70/github"
+	gh "github.com/google/go-github/v71/github"
 )
 
 type PRLabels map[string]struct{}
