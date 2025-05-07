@@ -13,9 +13,6 @@ github.com/davecgh/go-spew/spew
 # github.com/golang-jwt/jwt/v4 v4.5.2
 ## explicit; go 1.16
 github.com/golang-jwt/jwt/v4
-# github.com/google/go-github/v70 v70.0.0
-## explicit; go 1.23.0
-github.com/google/go-github/v70/github
 # github.com/google/go-github/v71 v71.0.0
 ## explicit; go 1.23.0
 github.com/google/go-github/v71/github
