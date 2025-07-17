@@ -12,7 +12,7 @@ require (
 	github.com/palantir/go-githubapp v0.35.0
 	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.34.0
-	github.com/sergi/go-diff v1.3.1
+	github.com/sergi/go-diff v1.4.0
 	github.com/stretchr/testify v1.10.0
 	goji.io v2.0.2+incompatible
 	golang.org/x/oauth2 v0.30.0
