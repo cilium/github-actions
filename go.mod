@@ -15,7 +15,7 @@ require (
 	github.com/sergi/go-diff v1.4.0
 	github.com/stretchr/testify v1.11.1
 	goji.io v2.0.2+incompatible
-	golang.org/x/oauth2 v0.30.0
+	golang.org/x/oauth2 v0.31.0
 	golang.org/x/sync v0.17.0
 	gopkg.in/yaml.v2 v2.4.0
 )
