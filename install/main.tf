@@ -153,6 +153,24 @@ resource "google_compute_health_check" "http_health_check" {
   }
 }
 
+# Cloud Router for NAT gateway
+resource "google_compute_router" "router" {
+  name    = "nat-router"
+  project = var.project_id
+  region  = var.region
+  network = "default"
+}
+
+# Cloud NAT to allow instances without public IPs to access the internet
+resource "google_compute_router_nat" "nat" {
+  name                               = "nat-gateway"
+  project                            = var.project_id
+  router                             = google_compute_router.router.name
+  region                             = var.region
+  nat_ip_allocate_option             = "AUTO_ONLY"
+  source_subnetwork_ip_ranges_to_nat = "ALL_SUBNETWORKS_ALL_IP_RANGES"
+}
+
 # Reserve a global static IP for the load balancer
 resource "google_compute_global_address" "lb_ip" {
   name = "lb-ip"
