@@ -20,7 +20,7 @@ import (
 	"strings"
 	"time"
 
-	gh "github.com/google/go-github/v71/github"
+	gh "github.com/google/go-github/v84/github"
 )
 
 type AutoMerge struct {
@@ -354,38 +354,28 @@ func (c *Client) getReviews(owner string, repoName string, prNumber int) (map[st
 }
 
 func (c *Client) getPendingReviews(owner string, repoName string, prNumber int) (map[string]struct{}, map[string]struct{}, error) {
-	nextPage := 0
 	var (
 		users   = map[string]struct{}{}
 		teams   = map[string]struct{}{}
 		cancels []context.CancelFunc
 	)
-	for {
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		cancels = append(cancels, cancel)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	cancels = append(cancels, cancel)
 
-		reviewers, resp, err := c.GHClient.PullRequests.ListReviewers(ctx, owner, repoName, prNumber, &gh.ListOptions{
-			Page: nextPage,
-		})
-		if err != nil {
-			return nil, nil, err
-		}
-		if len(reviewers.Teams) != 0 ||
-			len(reviewers.Users) != 0 {
+	reviewers, _, err := c.GHClient.PullRequests.ListReviewers(ctx, owner, repoName, prNumber)
+	if err != nil {
+		return nil, nil, err
+	}
+	if len(reviewers.Teams) != 0 ||
+		len(reviewers.Users) != 0 {
 
-			for _, user := range reviewers.Users {
-				users[user.GetLogin()] = struct{}{}
-			}
-			for _, team := range reviewers.Teams {
-				teams[team.GetName()] = struct{}{}
-			}
+		for _, user := range reviewers.Users {
+			users[user.GetLogin()] = struct{}{}
+		}
+		for _, team := range reviewers.Teams {
+			teams[team.GetName()] = struct{}{}
+		}
 
-		}
-		nextPage = resp.NextPage
-		if nextPage != 0 {
-			continue
-		}
-		break
 	}
 
 	return users, teams, nil

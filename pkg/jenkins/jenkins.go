@@ -165,7 +165,7 @@ func (jc *JenkinsClient) GetJobFailure(ctx context.Context, jobName string, buil
 	for _, actions := range build.Raw.Actions {
 		for _, par := range actions.Parameters {
 			if par.Name == "ghprbPullId" {
-				prNumber, err := strconv.Atoi(par.Value)
+				prNumber, err := strconv.Atoi(par.Value.(string))
 				// There are at least 2 fields with this name. One has the PR
 				// number as its value, the other has '${ghprbPullId}'. If we
 				// can't parse '${ghprbPullId}' then it means it's not the field

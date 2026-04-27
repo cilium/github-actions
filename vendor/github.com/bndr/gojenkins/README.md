@@ -15,13 +15,23 @@ These are some of the features that are currently implemented:
 * Ability to query Jobs, and manipulate them.
 * Get Plugins, Builds, Artifacts, Fingerprints
 * Validate Fingerprints of Artifacts
+* Create and Delete Users
 * Get Current Queue, Cancel Tasks
+* Create and Revoke API Tokens
 * etc. For all methods go to GoDoc Reference.
 
 ## Installation
 
     go get github.com/bndr/gojenkins
 
+## CLI
+
+For users that would like CLI based on gojenkins, follow the steps below:
+
+   ```
+   $ cd cli/jenkinsctl
+   $ make
+   ```
 ## Usage
 
 ```go
@@ -45,11 +55,15 @@ if err != nil {
   panic("Something Went Wrong")
 }
 
-queueid, err := jenkins.BuildJob(ctx, "#jobname", nil)
+job, err := jenkins.GetJob(ctx, "#jobname")
 if err != nil {
   panic(err)
 }
-build, err := jenkins.GetBuildFromQueueID(ctx, queueid)
+queueid, err := job.InvokeSimple(ctx, params) // or  jenkins.BuildJob(ctx, "#jobname", params)
+if err != nil {
+  panic(err)
+}
+build, err := jenkins.GetBuildFromQueueID(ctx, job, queueid)
 if err != nil {
   panic(err)
 }
@@ -244,6 +258,45 @@ build.Poll()
 
 ```
 
+### Create and Delete Users
+
+```go
+// Create user
+user, err := jenkins.CreateUser(ctx, "username", "password", "fullname", "user@email.com")
+if err != nil {
+  log.Fatal(err)
+}
+// Delete User
+err = user.Delete()
+if err != nil {
+  log.Fatal(err)
+}
+// Delete user not created by gojenkins
+err = jenkins.DeleteUser("username")
+```
+
+## Create and Revoke API Tokens
+
+```go
+// Create a token for admin user
+token, err := jenkins.GenerateAPIToken(ctx, "TestToken")
+if err != nil {
+  log.Fatal(err)
+}
+
+// Set Jenkins client to use new API token
+jenkins.Requester.BasicAuth.Password = token.Value
+
+// Revoke token that was just created
+token.Revoke()
+
+// Revoke all tokens for admin user
+err = jenkins.RevokeAllAPITokens(ctx)
+if err != nil {
+  log.Fatal(err)
+}
+```
+
 ## Testing
 
     go test
@@ -257,7 +310,6 @@ All Contributions are welcome. The todo list is on the bottom of this README. Fe
 Although the basic features are implemented there are many optional features that are on the todo list.
 
 * Kerberos Authentication
-* CLI Tool
 * Rewrite some (all?) iterators with channels
 
 ## LICENSE
