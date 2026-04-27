@@ -1,6 +1,6 @@
 module github.com/cilium/github-actions
 
-go 1.25.0
+go 1.26.0
 
 require (
 	github.com/bndr/gojenkins v1.2.0

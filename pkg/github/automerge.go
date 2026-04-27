@@ -176,7 +176,7 @@ func (c *Client) AutoMerge(
 		ctx, cancel = context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 		_, _, err = c.GHClient.Issues.CreateComment(ctx, owner, repoName, prNumber, &gh.IssueComment{
-			Body: func() *string { a := fmt.Sprintf("Setting %s to let a human merge this PR.", cfg.Label); return &a }(),
+			Body: func() *string { ; return new(fmt.Sprintf("Setting %s to let a human merge this PR.", cfg.Label)) }(),
 		})
 		if err != nil {
 			return err

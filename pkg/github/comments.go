@@ -45,7 +45,7 @@ func (c *Client) CommentAndOpenIssue(ctx context.Context, owner, repo string, is
 	}
 
 	_, _, err = c.GHClient.Issues.Edit(ctx, owner, repo, issueNumber, &gh.IssueRequest{
-		State: func() *string { a := "open"; return &a }(),
+		State: func() *string { ; return new("open") }(),
 	})
 
 	return err
