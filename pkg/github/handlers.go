@@ -144,7 +144,6 @@ func (c *Client) HandlePullRequestReviewEvent(cfg PRBlockerConfig, pre *gh.PullR
 func (c *Client) HandleStatusEvent(cfg PRBlockerConfig, se *gh.StatusEvent) error {
 	owner := se.Repo.GetOwner().GetLogin()
 	repoName := *se.Repo.Name
-	nextPage := 0
 
 	if true {
 		cfg.AutoMerge.Label = "ready-to-merge"
@@ -193,30 +192,22 @@ func (c *Client) HandleStatusEvent(cfg PRBlockerConfig, se *gh.StatusEvent) erro
 		}
 	}
 
+	// Use the dedicated "list pull requests associated with a commit" endpoint
+	// instead of the search API. This is scoped to the repo, uses the core API
+	// rate limit (5000/hr) instead of the much tighter search rate limit
+	// (30/min), is immediately consistent (no search-index lag), and returns
+	// PullRequest objects directly so we don't need a follow-up
+	// PullRequests.Get call per result.
+	listOpts := &gh.ListOptions{PerPage: 100}
 	for {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		cancels = append(cancels, cancel)
-		issues, resp, err := c.GHClient.Search.Issues(ctx, se.GetSHA(), &gh.SearchOptions{
-			ListOptions: gh.ListOptions{
-				Page: nextPage,
-			},
-		})
+		prs, resp, err := c.GHClient.PullRequests.ListPullRequestsWithCommit(
+			ctx, c.orgName, c.repoName, se.GetSHA(), listOpts)
 		if err != nil {
 			return err
 		}
-		for _, pr := range issues.Issues {
-			prOrgName, prRepoName, err := ownerRepoFromRepositoryURL(pr.GetRepositoryURL())
-			if err != nil {
-				return fmt.Errorf("failed to extract org & repo name from PR URL: %w", err)
-			}
-			if prOrgName != c.orgName || prRepoName != c.repoName {
-				continue
-			}
-			pr, _, err := c.GHClient.PullRequests.Get(ctx, prOrgName, prRepoName, pr.GetNumber())
-			if err != nil {
-				c.Log().Warn().Msgf("Unable to get PR for sha %s", se.GetSHA())
-				continue
-			}
+		for _, pr := range prs {
 			if pr.GetDraft() {
 				c.Log().Info().Fields(map[string]interface{}{"pr-number": pr.GetNumber()}).Msgf("PR is in draft")
 				continue
@@ -242,11 +233,10 @@ func (c *Client) HandleStatusEvent(cfg PRBlockerConfig, se *gh.StatusEvent) erro
 			}
 		}
 
-		nextPage = resp.NextPage
-		if nextPage != 0 {
-			continue
+		if resp.NextPage == 0 {
+			break
 		}
-		break
+		listOpts.Page = resp.NextPage
 	}
 	return nil
 }
