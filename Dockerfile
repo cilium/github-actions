@@ -5,7 +5,7 @@ WORKDIR /go/src/github.com/cilium/github-actions
 RUN make github-actions
 RUN strip github-actions
 
-FROM docker.io/library/alpine:3.21.3@sha256:a8560b36e8b8210634f77d9f7f9efd7ffa463e380b75e2e74aff4511df3ef88c as certs
+FROM docker.io/library/alpine:3.21.7@sha256:48b0309ca019d89d40f670aa1bc06e426dc0931948452e8491e3d65087abc07d as certs
 RUN apk --update add ca-certificates
 
 FROM scratch
