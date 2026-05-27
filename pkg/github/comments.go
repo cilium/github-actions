@@ -20,7 +20,7 @@ import (
 	"regexp"
 
 	"github.com/cilium/github-actions/pkg/jenkins"
-	gh "github.com/google/go-github/v84/github"
+	gh "github.com/google/go-github/v85/github"
 )
 
 type MLHCommand string
@@ -45,7 +45,7 @@ func (c *Client) CommentAndOpenIssue(ctx context.Context, owner, repo string, is
 	}
 
 	_, _, err = c.GHClient.Issues.Edit(ctx, owner, repo, issueNumber, &gh.IssueRequest{
-		State: func() *string { ; return new("open") }(),
+		State: func() *string { return new("open") }(),
 	})
 
 	return err

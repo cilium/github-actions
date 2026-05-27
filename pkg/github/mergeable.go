@@ -20,7 +20,7 @@ import (
 	"regexp"
 	"time"
 
-	gh "github.com/google/go-github/v84/github"
+	gh "github.com/google/go-github/v85/github"
 )
 
 type PRLabelConfig struct {
@@ -171,7 +171,7 @@ func (c *Client) UpdateMergeabilityCheck(
 	nextPage := 0
 	for {
 		lc, resp, err := c.GHClient.Checks.ListCheckRunsForRef(ctx, owner, repoName, head.GetSHA(), &gh.ListCheckRunsOptions{
-			CheckName: func() *string { ; return new(checkerName) }(),
+			CheckName: func() *string { return new(checkerName) }(),
 			ListOptions: gh.ListOptions{
 				Page: nextPage,
 			},
@@ -188,7 +188,7 @@ func (c *Client) UpdateMergeabilityCheck(
 						_, _, err := c.GHClient.Checks.UpdateCheckRun(ctx, owner, repoName, cr.GetID(), gh.UpdateCheckRunOptions{
 							Name:       checkerName,
 							ExternalID: head.SHA,
-							Status:     func() *string { ; return new("completed") }(),
+							Status:     func() *string { return new("completed") }(),
 							Conclusion: &conclusion,
 							CompletedAt: &gh.Timestamp{
 								Time: time.Now(),
@@ -227,7 +227,7 @@ func (c *Client) UpdateMergeabilityCheck(
 				Name:       checkerName,
 				HeadSHA:    head.GetSHA(),
 				ExternalID: head.SHA,
-				Status:     func() *string { ; return new("completed") }(),
+				Status:     func() *string { return new("completed") }(),
 				Conclusion: &conclusion,
 				CompletedAt: &gh.Timestamp{
 					Time: time.Now(),
