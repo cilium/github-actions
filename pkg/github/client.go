@@ -16,6 +16,7 @@ package github
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -24,6 +25,14 @@ import (
 	"github.com/rs/zerolog"
 	"golang.org/x/oauth2"
 )
+
+// maxRateLimitRetries is the maximum number of times GetConfigFile will retry
+// when it hits a primary or secondary GitHub rate limit.
+const maxRateLimitRetries = 5
+
+// maxRateLimitWait is the maximum amount of time GetConfigFile will sleep
+// while waiting for a rate limit to reset before giving up.
+const maxRateLimitWait = 2 * time.Minute
 
 type Client struct {
 	GHClient   *gh.Client
@@ -62,15 +71,40 @@ func NewClientFromGHClient(ghClient *gh.Client, orgName, repo string, logger *ze
 }
 
 func (c *Client) GetConfigFile(owner, repoName, file, sha string) ([]byte, error) {
-	fileContent, _, _, err := c.GHClient.Repositories.GetContents(
-		context.Background(),
-		owner,
-		repoName,
-		file,
-		&gh.RepositoryContentGetOptions{Ref: sha})
+	var (
+		fileContent *gh.RepositoryContent
+		err         error
+	)
+	for attempt := 0; attempt < maxRateLimitRetries; attempt++ {
+		fileContent, _, _, err = c.GHClient.Repositories.GetContents(
+			context.Background(),
+			owner,
+			repoName,
+			file,
+			&gh.RepositoryContentGetOptions{Ref: sha})
+		if err == nil {
+			break
+		}
 
+		wait, ok := rateLimitRetryAfter(err)
+		if !ok {
+			return nil, fmt.Errorf("unable to get configuration file %q: %w", file, err)
+		}
+		if wait > maxRateLimitWait {
+			return nil, fmt.Errorf("unable to get configuration file %q: rate limit wait %s exceeds max %s: %w", file, wait, maxRateLimitWait, err)
+		}
+		if c.log != nil {
+			c.log.Warn().
+				Err(err).
+				Str("file", file).
+				Dur("retry_after", wait).
+				Int("attempt", attempt+1).
+				Msg("GitHub rate limit hit while fetching config file, retrying after wait")
+		}
+		time.Sleep(wait)
+	}
 	if err != nil {
-		return nil, fmt.Errorf("unable to get configuration file %q: %w", file, err)
+		return nil, fmt.Errorf("unable to get configuration file %q after %d retries: %w", file, maxRateLimitRetries, err)
 	}
 	content, err := fileContent.GetContent()
 	if err != nil {
@@ -78,6 +112,31 @@ func (c *Client) GetConfigFile(owner, repoName, file, sha string) ([]byte, error
 	}
 
 	return []byte(content), nil
+}
+
+// rateLimitRetryAfter returns the duration to wait before retrying if err is a
+// GitHub primary or secondary rate limit error. The boolean return value
+// indicates whether the error is in fact a rate limit error.
+func rateLimitRetryAfter(err error) (time.Duration, bool) {
+	// Secondary (abuse) rate limit.
+	var abuseErr *gh.AbuseRateLimitError
+	if errors.As(err, &abuseErr) {
+		if abuseErr.RetryAfter != nil && *abuseErr.RetryAfter > 0 {
+			return *abuseErr.RetryAfter, true
+		}
+		// GitHub didn't provide a Retry-After header; back off conservatively.
+		return time.Minute, true
+	}
+	// Primary rate limit.
+	var rateErr *gh.RateLimitError
+	if errors.As(err, &rateErr) {
+		wait := time.Until(rateErr.Rate.Reset.Time)
+		if wait <= 0 {
+			wait = time.Second
+		}
+		return wait, true
+	}
+	return 0, false
 }
 
 // GetFailedJenkinsURLs returns a slice of URLs of tests that failed for the
