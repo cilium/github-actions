@@ -87,7 +87,7 @@ resource "google_compute_instance" "vm" {
   }
 
   service_account {
-    email  = format("%s@%s.iam.gserviceaccount.com", var.service_account_name, var.project_id)
+    email = format("%s@%s.iam.gserviceaccount.com", var.service_account_name, var.project_id)
     scopes = [
       "https://www.googleapis.com/auth/cloud-platform",
     ]
@@ -133,12 +133,22 @@ resource "google_compute_backend_service" "backend_service" {
 
 # Instance group for the VM
 resource "google_compute_instance_group" "instance_group" {
-  name        = "instance-group"
-  instances   = [google_compute_instance.vm.self_link]
-  zone        = var.zone
+  name      = "instance-group"
+  instances = [google_compute_instance.vm.self_link]
+  zone      = var.zone
   named_port {
     name = "http"
     port = "80"
+  }
+
+  # The instance group is zonal, so changing var.zone forces its replacement.
+  # Without create_before_destroy Terraform tries to delete the old group
+  # first, which fails because the global backend service still references it
+  # (resourceInUseByAnotherResource). Creating the replacement first lets the
+  # backend service be repointed before the old group is removed. The VM sets
+  # this for the same reason.
+  lifecycle {
+    create_before_destroy = true
   }
 }
 
@@ -148,7 +158,7 @@ resource "google_compute_health_check" "http_health_check" {
   check_interval_sec = 10
   timeout_sec        = 5
   http_health_check {
-    port    = 80
+    port         = 80
     request_path = "/healthz"
   }
 }
@@ -178,10 +188,10 @@ resource "google_compute_global_address" "lb_ip" {
 
 # Update the global forwarding rule to use the reserved IP
 resource "google_compute_global_forwarding_rule" "https_forwarding_rule" {
-  name        = "https-forwarding-rule"
-  target      = google_compute_target_https_proxy.https_proxy.self_link
-  port_range  = "443"
-  ip_protocol = "TCP"
+  name                  = "https-forwarding-rule"
+  target                = google_compute_target_https_proxy.https_proxy.self_link
+  port_range            = "443"
+  ip_protocol           = "TCP"
   load_balancing_scheme = "EXTERNAL"
-  ip_address  = google_compute_global_address.lb_ip.address
+  ip_address            = google_compute_global_address.lb_ip.address
 }
