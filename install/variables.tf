@@ -21,7 +21,7 @@ variable "instance_name" {
 variable "zone" {
   description = "The GCP zone to deploy instances into"
   type        = string
-  default     = "us-central1-c"
+  default     = "us-central1-a"
 }
 
 variable "region" {
